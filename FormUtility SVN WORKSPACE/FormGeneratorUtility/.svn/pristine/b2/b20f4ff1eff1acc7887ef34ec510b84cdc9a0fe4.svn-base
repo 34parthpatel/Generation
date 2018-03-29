@@ -1,0 +1,46 @@
+package com.dao;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.bean.PageMapping;
+import com.bean.TblFormSchema;
+
+public interface FormUtilityDao {
+	public void genrateClass();
+
+	public boolean genrateClassFromTable(String tableName, String buildPath);
+
+	public boolean insertData(String className, HttpServletRequest request);
+	
+	public List<TblFormSchema> getTableFormSchemaData(int fk);
+
+	public void generateForm(List<TblFormSchema> list, String pageName, String compileLocation);
+
+	public int insertPageMappingData(PageMapping pageMapping);
+
+	public void insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[] fld_val,String[] fld_index, int pageMappingId);
+
+	public void createTable(String pageName, String[] fld_name, String[] fld_type,
+			String[] fld_size, String[] fld_size2, String[] fld_val);
+
+	public PageMapping getPageMappingData(String pageName);
+
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size, String[] fld_ctrl, String[] fld_val);
+
+	public long deletePageTableFields(int pageId);
+
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation);
+
+	public List<PageMapping> getPageMappingData();
+
+	public List<TblFormSchema> getListTableFormSchemas(String pageMappingId);
+
+	public String genrateHTMLFormTableString(List<TblFormSchema> listFormSchemas);
+
+	public List getListDataFromModelName(String modelName);
+
+	public boolean isPageExist(String pageName);
+}

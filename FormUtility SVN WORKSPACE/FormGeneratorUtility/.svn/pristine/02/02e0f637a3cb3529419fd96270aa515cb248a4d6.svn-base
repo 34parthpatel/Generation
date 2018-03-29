@@ -1,0 +1,236 @@
+package com.service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import com.bean.FileUpload;
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.dao.FormUtilityDao;
+
+@Service("formUtilityService")
+public class FormUtilityServiceImpl implements FormUtilityService {
+	@Autowired
+	private FormUtilityDao formUtilityDao;
+	
+	@Override
+	public void genrateClass()  throws Exception {
+		
+		formUtilityDao.genrateClass();
+	}
+
+	@Override
+	public boolean generateClassFromTable(String tableName, String buildPath, Map<String, TblFormSchema> tableFormSchemaMap) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.generateClassFromTable(tableName,buildPath, tableFormSchemaMap);
+	}
+
+	@Override
+	public boolean insertData(Object dataObject, Class<?> cls) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertData(dataObject,cls);
+	}
+	
+	@Override
+	public List<TblFormSchema> getTableFormSchemaData(int fk) throws Exception { 
+		// TODO Auto-generated method stub
+		return formUtilityDao.getTableFormSchemaData(fk);
+	}
+
+	@Override
+	public void generateForm(List<TblFormSchema> list, PageMapping pageMapping, String compileLocation) throws Exception {
+		// TODO Auto-generated method stub
+		formUtilityDao.generateForm(list, pageMapping, compileLocation);
+	}
+
+	@Override
+	public int insertPageMappingData(PageMapping pageMapping) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertPageMappingData(pageMapping);
+	}
+
+	@Override
+	public Map< String, TblFormSchema> insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl, String[] fld_name, String[] fld_size, String[]  fld_val, String[] fld_index, 
+			String[] regex, String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date, String[] date_format, int pageMappingId) throws Exception {
+		// TODO Auto-generated method stub
+		return 	formUtilityDao.insertFieldData(fld_ctrl, fld_type,fld_lbl, fld_name, fld_size, fld_val, fld_index, regex, 
+				date_all, date_past, date_future, start_date, end_date, date_format, pageMappingId);
+	}
+
+	@Override
+	public boolean createTable(String pageName,String[] fld_ctrl, String[] fld_name, String[] fld_type,
+			String[] fld_size,String[] fld_val) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.createTable(pageName,fld_ctrl, fld_name, fld_type,fld_size,fld_val);
+	}
+	
+	@Override
+	public PageMapping getPageMappingData(String pageMappingID) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getPageMappingData(pageMappingID);
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,String[] fld_ctrl, String[] fld_val) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.updateTableSchema(pageName, fld_name, fld_type,fld_size,fld_ctrl,fld_val);
+	}
+
+	@Override
+	public long deletePageTableFields(int pageId) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.deletePageTableFields(pageId);
+	}
+
+	@Override
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.dropForm(pageMappingId,pageMappingName,compileLocation);
+	}
+
+	@Override
+	public List<PageMapping> getPageMappingData() throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getPageMappingData();
+	}
+
+	@Override
+	public List<TblFormSchema> getListTableFormSchema(String pageMappingId) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListTableFormSchema(pageMappingId);
+	}
+
+	@Override
+	public String generateHTMLFormTableString(List<TblFormSchema> listFormSchemas,List<RegexPattern> listRegexPatterns) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.generateHTMLFormTableString(listFormSchemas, listRegexPatterns);
+	}
+
+	@Override
+	public List getListDataFromModelName(String modelName) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListDataFromModelName(modelName);
+	}
+
+	@Override
+	public boolean isPageExist(String pageName) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.isPageExist(pageName);
+	}
+
+	@Override
+	public String getHTMLRegexPatternData(List<RegexPattern> listRegexPatterns) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getHTMLRegexPatternData( listRegexPatterns);
+	}
+
+	@Override
+	public List<RegexPattern> getListRegEx(String[] regex) throws Exception{
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListRegEx(regex);
+	}
+
+	@Override
+	public boolean insertObjectIntoDB(Object regexObj) throws Exception {
+		// TODO Auto-generated method stub
+		return  formUtilityDao.insertObjectIntoDB(regexObj);
+	}
+
+	@Override
+	public Map<String, TblFormSchema> setTableFormSchemaInMap(String[] fld_ctrl, String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[] fld_val, String[] fld_index, String[] regex, String[] tooltip, 
+			String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date,
+			String[] date_format, String[] required, int pageMappingId) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.setTableFormSchemaInMap(fld_ctrl, fld_type,fld_lbl, fld_name, fld_size, fld_val, fld_index, regex, tooltip, 
+				date_all, date_past, date_future, start_date, end_date, date_format, required, pageMappingId);
+	}
+
+	@Override
+	public HashMap<String, String> validateFormGenerationData(PageMapping pageMapping,
+			Map<String, TblFormSchema> tableFormSchemaMapList) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.validateFormGenerationData(pageMapping,tableFormSchemaMapList);
+	}
+
+	@Override
+	public boolean insertFieldData(Map<String, TblFormSchema> tableFormSchemaMapList, int pageMappingId) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertFieldData( tableFormSchemaMapList,  pageMappingId) ;
+	}
+
+	@Override
+	public boolean createTable(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.createTable( pageName, tableFormSchemaMapList);
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.updateTableSchema( pageName, tableFormSchemaMapList);
+	}
+
+	@Override
+	public String getHTMLRegexPatternDataForModule(List<RegexPattern> listRegexPatterns, String moduleName) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getHTMLRegexPatternDataForModule(listRegexPatterns,  moduleName);
+	}
+
+	@Override
+	public boolean deletePageMappingFromPageName(String pageName) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.deletePageMappingFromPageName(pageName);
+	}
+
+	@Override
+	public boolean regenerateTableAndForm(int pageId, String pageName,
+			List<TblFormSchema> listCurrentTblFormSchemaData,String buildPath) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.regenerateTableAndForm(pageId,pageName,listCurrentTblFormSchemaData, buildPath);
+	}
+
+	@Override
+	public boolean updateObject(Object obj) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.updateObject(obj);
+	}
+
+	@Override
+	public void uploadFile(FileUpload fileUpload,CommonsMultipartFile file) throws Exception {
+		// TODO Auto-generated method stub
+		 formUtilityDao.uploadFile( fileUpload,file);
+	}
+
+	@Override
+	public Integer insertDataRestunAutoGenratedId(Object dataObject, Class<? extends Object> cls) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertDataRestunAutoGenratedId( dataObject, cls) ;
+	}
+
+	@Override
+	public List<Object> getListDataFromModelNameById(String modelName, String fileName)
+			throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListDataFromModelNameById(modelName, fileName);
+	}
+
+	@Override
+	public List<Object> getPageMappingDataByName(String name) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getPageMappingDataByName(name);
+	}
+
+	@Override
+	public boolean checkFileValidation(String path, CommonsMultipartFile file) throws Exception {
+		// TODO Auto-generated method stub
+		return formUtilityDao.checkFileValidation(path, file);
+	}
+
+}

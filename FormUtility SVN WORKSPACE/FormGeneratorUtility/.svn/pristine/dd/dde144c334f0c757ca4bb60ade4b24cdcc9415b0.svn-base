@@ -1,0 +1,334 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+
+<!DOCTYPE html >
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Insert title here</title>
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="css/jquery.datetimepicker.min.css">
+<script src="js/jquery-3.2.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/jquery.datetimepicker.full.js"></script>
+<script src="js/formutility.js"></script>
+
+<script>
+$(document).ready(function(){
+    $('body').tooltip({
+    	selector: '[rel=tooltip]'
+    });
+});
+</script>
+
+<script>
+$(document).ready(function() {
+var counter = ${counter	};
+
+					/* $("select").on('change', function() {
+						var count = $('[id^=tbl_tr]').length;
+						alert(count);
+						var temp = $("#fld_ctrl"+count).val();
+						alert( temp );
+					}) */
+
+	$("#addFields").click(function () {
+	   	
+	   	var newTextBoxDiv = $(document.createElement('tr'))
+		     .attr("id", 'tbl_tr'+counter);
+		newTextBoxDiv.after().html('<td><select class="form-control temp" name="fld_ctrl" id="fld_ctrl'+counter+'" onchange="getFldCtrl(\'tbl_tr'+counter+'\',\'fld_ctrl'+counter+'\')" >' +
+				'<option value="textbox">TextBox</option>' +
+				'<option value="password">Password</option>' +
+				'<option value="textarea">TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date">Date</option>' +
+				'<option value="number">Number</option>' +
+				'</select></td>' +
+				'<td><select class="form-control" name="fld_type" id="fld_type">' +
+				'<option value="INT">INT</option>' +
+				'<option value="CHAR">CHAR</option>' +
+				'<option value="VARCHAR">VARCHAR</option>' +
+				'<option value="DATE">DATE</option>' +
+				'<option value="DATETIME">DATETIME</option>' +
+				'</select></td>' +
+				'<td><input type="text" name="fld_lbl" id="fld_lbl" /></td>' +
+				'<td><input type="text" name="fld_name" id="fld_name" /></td>' +
+				'<td><input type="text" name="fld_size" id="fld_size" /></td>' +
+				'<td><input type="text" name="fld_index" id="fld_index" size="1" maxlength="2" /></td>' +
+				"${htmlRegexPatterns }" +
+				'<td><input type="checkBox" name="cb" id="cb'+counter+'" value="tbl_tr'+counter+'" ></td>'+
+				'<td><textarea rows="2" cols="22" name="fld_val" id="fld_val" style="display: none;" ></textarea></td>');
+		newTextBoxDiv.appendTo("#table_fields");
+		counter++;
+	   });
+	
+	
+	$("#delFields").click(function() {
+		var count = $('[id^=tbl_tr]').length;
+		var j = 0;
+		var favorite = [];
+		$.each($("input[name='cb']:checked"), function() {
+			$("#" + $(this).val()).remove();
+			favorite.push($(this).val());
+		});
+		
+		if (favorite.length == 0) {
+			var count = $('[id^=tbl_tr]').length;
+			if (count == 1) {
+				alert("You Can Not Delete Parent Row!");
+				return false;
+			} else {
+				counter--;
+				$("#tbl_tr" + counter).remove();
+			}
+		}
+		
+	});
+
+});
+</script>
+
+<script type="text/javascript">
+	var optCnt = 1;
+	function getFldCtrl(rowId,ctrlId) {
+		/* alert(id.charAt(id.length-1)); */
+		//var count = $('[id^=tbl_tr]').length;
+		var idNo = rowId.charAt(rowId.length-1);
+		var val = $("#" + ctrlId).val();
+		if (val == 'radio') {
+			var idHtml = '<tr id="'+rowId+'"><td><select class="form-control temp" name="fld_ctrl" id="'+ctrlId+'" onchange="getFldCtrl(\''+rowId+'\',\''+ctrlId+'\')" >'
+									+ '<option value="textbox">TextBox</option>'
+									+ '<option value="password">Password</option>'
+									+ '<option value="textarea">TextArea</option>'
+									+ '<option value="radio" selected>Radio Button</option>'
+									+ '<option value="checkBox">Check Box</option>'
+									+ '<option value="comboBox">Select</option>'
+									+ '<option value="date">Date</option>'
+									+ '<option value="number">Number</option>'
+									+ '</select></td>'
+									+ '<td><select class="form-control" name="fld_type" id="fld_type">'
+									+ '<option value="INT">INT</option>'
+									+ '<option value="CHAR">CHAR</option>'
+									+ '<option value="VARCHAR">VARCHAR</option>'
+									+ '</select></td>'
+									+ '<td><input type="text" name="fld_lbl" id="fld_lbl" /></td>'
+									+ '<td><input type="text" name="fld_name" id="fld_name" /></td>'
+									+ '<td><textarea rows="2" cols="22" name="fld_val" id="fld_val" placeholder="Enter values..." rel="tooltip" data-toggle="tooltip" title="Enter comma separated values here!" ></textarea></td>'
+									+ '<td><input type="text" name="fld_index" id="fld_index" size="1" maxlength="2" /></td>'
+									+ "${htmlRegexPatterns }"
+									+ '<td><input type="checkBox" name="cb" id="cb'+idNo+'"  value="'+rowId+'"></td>'
+									+ '<td><input type="hidden" name="fld_size" id="fld_size" /></td></tr>';
+			document.getElementById(rowId).innerHTML = idHtml;
+		} else if (val == 'checkBox') {
+			var idHtml = '<tr id="'+rowId+'"><td><select class="form-control temp" name="fld_ctrl" id="'+ctrlId+'" onchange="getFldCtrl(\''+rowId+'\',\''+ctrlId+'\')" >'
+									+ '<option value="textbox">TextBox</option>'
+									+ '<option value="password">Password</option>'
+									+ '<option value="textarea">TextArea</option>'
+									+ '<option value="radio">Radio Button</option>'
+									+ '<option value="checkBox" selected>Check Box</option>'
+									+ '<option value="comboBox">Select</option>'
+									+ '<option value="date">Date</option>'
+									+ '<option value="number">Number</option>'
+									+ '</select></td>'
+									+ '<td><select class="form-control" name="fld_type" id="fld_type">'
+									+ '<option value="INT">INT</option>'
+									+ '<option value="CHAR">CHAR</option>'
+									+ '<option value="VARCHAR">VARCHAR</option>'
+									+ '</select></td>'
+									+ '<td><input type="text" name="fld_lbl" id="fld_lbl" /></td>'
+									+ '<td><input type="text" name="fld_name" id="fld_name" /></td>'
+									+ '<td><textarea rows="2" cols="22" name="fld_val" id="fld_val" placeholder="Enter values..." rel="tooltip" data-toggle="tooltip" title="Enter comma separated values here!" ></textarea></td>'
+									+ '<td><input type="text" name="fld_index" id="fld_index" size="1" maxlength="2" /></td>'
+									+ "${htmlRegexPatterns }"
+									+ '<td><input type="checkBox" name="cb" id="cb'+idNo+'"  value="'+rowId+'"></td>'
+									+ '<td><input type="hidden" name="fld_size" id="fld_size" /></td></tr>';
+			document.getElementById(rowId).innerHTML = idHtml;
+		} else if (val == 'comboBox') {
+			var idHtml = '<tr id="'+rowId+'"><td><select class="form-control temp" name="fld_ctrl" id="'+ctrlId+'" onchange="getFldCtrl(\''+rowId+'\',\''+ctrlId+'\')" >'
+									+ '<option value="textbox">TextBox</option>'
+									+ '<option value="password">Password</option>'
+									+ '<option value="textarea">TextArea</option>'
+									+ '<option value="radio">Radio Button</option>'
+									+ '<option value="checkBox">Check Box</option>'
+									+ '<option value="comboBox" selected>Select</option>'
+									+ '<option value="date">Date</option>'
+									+ '<option value="number">Number</option>'
+									+ '</select></td>'
+									+ '<td><select class="form-control" name="fld_type" id="fld_type">'
+									+ '<option value="INT">INT</option>'
+									+ '<option value="CHAR">CHAR</option>'
+									+ '<option value="VARCHAR">VARCHAR</option>'
+									+ '</select></td>'
+									+ '<td><input type="text" name="fld_lbl" id="fld_lbl" /></td>'
+									+ '<td><input type="text" name="fld_name" id="fld_name" /></td>'
+									+ '<td><textarea rows="2" cols="22" name="fld_val" id="fld_val" placeholder="Enter values..." rel="tooltip" data-toggle="tooltip" title="Enter comma separated values here!" ></textarea></td>'
+									+ '<td><input type="text" name="fld_index" id="fld_index" size="1" maxlength="2" /></td>'
+									+ "${htmlRegexPatterns }"
+									+ '<td><input type="checkBox" name="cb" id="cb'+idNo+'"  value="'+rowId+'"></td>'
+									+ '<td><input type="hidden" name="fld_size" id="fld_size" /></td></tr>';
+			document.getElementById(rowId).innerHTML = idHtml;
+		} 
+		else
+		{
+			var str = "";
+			var fieldTypes = '<select class="form-control" name="fld_type" id="fld_type">' +
+			'<option value="INT">INT</option>' +
+			'<option value="CHAR">CHAR</option>' +
+			'<option value="VARCHAR">VARCHAR</option>' +
+			'<option value="DATE">DATE</option>' +
+			'<option value="DATETIME">DATETIME</option>' +
+			'</select>';
+			if(val == 'textbox')
+			{
+				str = '<option value="textbox" selected>TextBox</option>' +
+				'<option value="password">Password</option>' +
+				'<option value="textarea">TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date">Date</option>' +
+				'<option value="number">Number</option>';
+				
+			}
+			else if(val == 'password')
+			{
+				str = '<option value="textbox">TextBox</option>' +
+				'<option value="password" selected>Password</option>' +
+				'<option value="textarea">TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date">Date</option>' +
+				'<option value="number">Number</option>';
+				fieldTypes = '<select class="form-control" name="fld_type" id="fld_type">' +
+				'<option value="VARCHAR">VARCHAR</option>' +
+				'</select>';
+			}
+			else if(val == 'textarea')
+			{
+				str = '<option value="textbox">TextBox</option>' +
+				'<option value="password">Password</option>' +
+				'<option value="textarea" selected>TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date">Date</option>' +
+				'<option value="number">Number</option>';
+				fieldTypes = '<select class="form-control" name="fld_type" id="fld_type">' +
+				'<option value="VARCHAR">VARCHAR</option>' +
+				'</select>';
+			}
+			else if(val == 'date')
+			{
+				str = '<option value="textbox">TextBox</option>' +
+				'<option value="password">Password</option>' +
+				'<option value="textarea">TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date" selected>Date</option>' +
+				'<option value="number">Number</option>';
+				fieldTypes = '<select class="form-control" name="fld_type" id="fld_type">' +
+				'<option value="DATE">DATE</option>' +
+				'<option value="DATETIME">DATETIME</option>' +
+				'</select>';
+			}
+			else
+			{
+				str = '<option value="textbox">TextBox</option>' +
+				'<option value="password">Password</option>' +
+				'<option value="textarea">TextArea</option>' +
+				'<option value="radio">Radio Button</option>' +
+				'<option value="checkBox">Check Box</option>' +
+				'<option value="comboBox">Select</option>' +
+				'<option value="date">Date</option>' +
+				'<option value="number" selected>Number</option>';
+				fieldTypes = '<select class="form-control" name="fld_type" id="fld_type">' +
+				'<option value="INT">INT</option>' +
+				'<option value="FLOAT">FLOAT</option>' +
+				'<option value="DOUBLE">DOUBLE</option>' +
+				'<option value="NUMERIC">NUMERIC</option>' +
+				'</select>';
+			}
+			
+			var idHtml = '<tr id="'+rowId+'"><td><select class="form-control temp" name="fld_ctrl" id="'+ctrlId+'" onchange="getFldCtrl(\''+rowId+'\',\''+ctrlId+'\')" >' +
+					str +
+					'</select></td>' +
+					'<td>' +
+					fieldTypes +
+					'</td>' +
+					'<td><input type="text" name="fld_lbl" id="fld_lbl" /></td>' +
+					'<td><input type="text" name="fld_name" id="fld_name" /></td>' +
+					'<td><input type="text" name="fld_size" id="fld_size" /></td>' +
+					'<td><input type="text" name="fld_index" id="fld_index" size="1" maxlength="2" /></td>' +
+					"${htmlRegexPatterns }" +
+					'<td><input type="checkBox" name="cb" id="cb'+idNo+'"  value="'+rowId+'"></td>' +
+					'<td><textarea rows="2" cols="22" name="fld_val" id="fld_val" style="display: none;" ></textarea></td></tr>';
+			document.getElementById(rowId).innerHTML = idHtml;
+		}
+
+	}
+
+	function removeDiv(id) {
+		optCnt--;
+		$("#" + id).remove();
+
+	}
+	function removeTableRow(id) {
+		$("#" + id).remove();
+	}
+</script>
+
+</head>
+<body>
+	<div class="container">
+		<h2>Form Schema Table</h2>
+		<br />
+		<form action="updateTable" method="post" name='updateForm' onsubmit="return checkForm()">
+			<input type="hidden" id="tableId" name="tableId" value="${pageID }">
+			<p id="errMsg" style="color: red;">${ errMsg}</p>
+			<h4>
+				Page Name / Table Name: <input type="text" name="pageName"
+					id="pageName" value="${pageName}" readonly />
+			</h4>
+			<table class="table">
+				<thead>
+					<tr>
+						<!-- <th class="call-sm-1"></th> -->
+						<th>Field Controller</th>
+						<th>Field Datatype</th>
+						<th>Field Label</th>
+						<th>Field Name</th>
+						<th>Field Size</th>
+						<th>Index</th>
+						<th>Validation</th>
+						<th>Delete</th>
+					</tr>
+				</thead>
+				<tbody id="table_fields">${htmlFormTable}
+
+				</tbody>
+				<tfoot>
+					<tr>
+						<td>
+							<br>
+							<input type="button" class="btn btn-primary" value="Add" id="addFields" /> 
+							<input type="button" class="btn btn-danger" value="Delete" id="delFields" />
+						</td>
+						<td>
+							<br />
+							<input type="submit" class="btn btn-success" value="Submit" /></td>
+						</td>
+					</tr>
+				</tfoot>
+			</table>
+
+		</form>
+
+
+	</div>
+
+</body>
+</html>

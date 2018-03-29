@@ -1,0 +1,331 @@
+package com.sttl.audit;
+
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.hibernate.CallbackException;
+import org.hibernate.EmptyInterceptor;
+import org.hibernate.Transaction;
+import org.hibernate.boot.SessionFactoryBuilder;
+import org.hibernate.type.Type;
+/**
+ * @author bhadresh.bajariya
+ *
+ */
+public class AuditLogInterceptor extends EmptyInterceptor {
+	
+	SessionFactoryBuilder sessionFactoryBuilder;
+	private Set inserts = new HashSet();
+	private Set updates = new HashSet();
+	private Set deletes = new HashSet();
+	HttpServletRequest request;
+	String macAddress = "00-00-00-00-00-00-00-00";
+	String ipAddress="0.0.0.0";
+	
+	public void setSessionFactoryBuilder(SessionFactoryBuilder sessionFactoryBuilder) {
+		this.sessionFactoryBuilder=sessionFactoryBuilder;
+	}
+		
+	@Override
+	public boolean onSave(Object entity,Serializable id,
+		Object[] state,String[] propertyNames,Type[] types)
+		throws CallbackException {
+		
+		//System.out.println("onSave : " + entity.getClass().getName());
+		
+		if (entity instanceof IAuditLog){
+			inserts.add(entity);
+		}else{
+			inserts.add(entity);
+		}
+		return false;
+			
+	}
+	
+	/*@Override
+	public String getEntityName(Object object) {
+		// TODO Auto-generated method stub
+		System.out.println("getEntityName : " + object.getClass().getName());
+		if (object instanceof IAuditLog){
+			deletes.add(object);
+		}else{
+			deletes.add(object);
+		}
+		postFlush(deletes.iterator());
+		return super.getEntityName(object);
+	}*/
+
+	@Override
+	public void afterTransactionBegin(Transaction tx) {
+		// TODO Auto-generated method stub
+		//System.out.println("check1");
+		//System.out.println(tx.toString() + " : " + tx.getClass());
+		super.afterTransactionBegin(tx);
+	}
+
+	@Override
+	public void afterTransactionCompletion(Transaction tx) {
+		// TODO Auto-generated method stub
+		//System.out.println("check2");
+		super.afterTransactionCompletion(tx);
+	}
+
+	@Override
+	public void beforeTransactionCompletion(Transaction tx) {
+		// TODO Auto-generated method stub
+	//	System.out.println("check3");
+		super.beforeTransactionCompletion(tx);
+	}
+
+	public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+		// TODO Auto-generated method stub
+		//System.out.println("onLoad : " + entity.getClass().getName());
+		
+		return super.onLoad(entity, id, state, propertyNames, types);
+	}
+
+	@Override
+	public String onPrepareStatement(String sql) {
+		// TODO Auto-generated method stub
+		//System.out.println("onPrepareStatement : " + sql);
+		return super.onPrepareStatement(sql);
+	}
+	
+	
+	@Override
+	public boolean onFlushDirty(Object entity,Serializable id,
+		Object[] currentState,Object[] previousState,
+		String[] propertyNames,Type[] types)
+		throws CallbackException {
+	
+		//System.out.println("onFlushDirty");
+		
+		if (entity instanceof IAuditLog){
+			updates.add(entity);
+		}else{
+			updates.add(entity);
+		}
+		return false;
+		
+	}
+	
+	@Override
+	public void onDelete(Object entity, Serializable id, 
+		Object[] state, String[] propertyNames, 
+		Type[] types) {
+		
+		//System.out.println("onDelete");
+		
+		if (entity instanceof IAuditLog){
+			deletes.add(entity);
+		}else{
+			deletes.add(entity);
+		}
+	}
+
+	//called before commit into database
+	@Override
+	public void preFlush(Iterator iterator) {
+		System.out.println("preFlush");
+	}	
+	
+	//called after committed into database
+	@Override
+	public void postFlush(Iterator iterator) {
+		System.out.println("postFlush");
+		
+		try{
+			String address[]= this.getIpAndMacAddress().split("\\|");
+			this.ipAddress = address[0];
+			this.macAddress = address[1];
+			System.out.println("Ip address is "+ ipAddress);
+			for (Iterator it = inserts.iterator(); it.hasNext();) {
+				Object entity = it.next();
+				//System.out.println("postFlush - insert"+ entity.getClass());
+				AuditLogUtil.LogIt("Saved",entity,ipAddress,macAddress,sessionFactoryBuilder);
+				it.remove();
+			}	
+			for (Iterator it = updates.iterator(); it.hasNext();) {
+				Object entity =  it.next();
+				//System.out.println("postFlush - update");
+				//AuditLogUtil.LogIt("Updated",entity,ipAddress,macAddress,((SessionImplementor) session).getJdbcConnectionAccess().obtainConnection());
+				AuditLogUtil.LogIt("Updated",entity,ipAddress,macAddress,sessionFactoryBuilder);
+				it.remove();
+			}	
+			
+			for (Iterator it = deletes.iterator(); it.hasNext();) {
+				Object entity =  it.next();
+				//System.out.println("postFlush - delete");
+				AuditLogUtil.LogIt("Deleted",entity,ipAddress,macAddress,sessionFactoryBuilder);
+				it.remove();
+			}	
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			//System.out.println("in AUditLoginterceptor");
+			e.printStackTrace();
+		} finally {
+			inserts.clear();
+			updates.clear();
+			deletes.clear();
+		}
+	}
+
+	public void setRequest(HttpServletRequest request) {
+		// TODO Auto-generated method stub
+		this.request = request;
+	}	
+
+	public String getIPandMACAddresss() {
+		return  getIpAndMacAddress();
+	}
+
+	/**/
+	public String getIpAndMacAddress() {
+		/*try {
+
+			URL url = new URL("http://192.168.6.59:8080/FormGeneratorUtility/getIpAndMacAddress");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setRequestMethod("GET");
+			conn.setRequestProperty("Accept", "text");
+
+			if (conn.getResponseCode() != 200) {
+				throw new RuntimeException("Failed : HTTP error code : "
+						+ conn.getResponseCode());
+			}
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+				(conn.getInputStream())));
+
+			String output="",data;
+			System.out.println("Output from Server .... \n");
+			while ((data= br.readLine()) != null) {
+				System.out.println("Data : "+data);
+				output = data;
+			}
+
+			conn.disconnect();
+			if(output == null || output.length() <10){
+				return "0.0.0.0|00-00-00-00-00-00";
+			}
+			return output;
+
+		  } catch (MalformedURLException e) {
+
+			e.printStackTrace();
+
+		  } catch (IOException e) {
+
+			e.printStackTrace();
+
+		  }*/
+		return "0.0.0.0|00-00-00-00-00-00";
+	}
+	
+	@Override
+	public void beforeCustomHibernateHQL(String query) {
+		// TODO Auto-generated method stub
+		System.out.println("AuditLog -> HQL -> " + query);
+		if(!query.toLowerCase().startsWith("from") && ! query.toLowerCase().startsWith("select")){
+			AuditLogUtil.LogIt("HQL",query,"0.0.0.0","00-00-00-00-00-00",sessionFactoryBuilder);	
+		}
+		
+	}
+	
+	@Override
+	public void beforeCustomHibernateSQL(String query) {
+		// TODO Auto-generated method stub
+		System.out.println("AuditLog -> SQL -> " + query);
+		query = query.toLowerCase();
+		StringBuilder json=new StringBuilder();
+		json.append("{");
+		String tableName="";
+		if(query.startsWith("select")){
+			//AuditLogUtil.LogIt("SQL",query,"0.0.0.0","00-00-00-00-00-00",sessionFactoryBuilder);	
+		}else if(query.startsWith("update")){
+			//String qry = qry.substring(query.indexOf("update"), endIndex)
+			int indexOfWhere =query.lastIndexOf("where");
+			int indexOfSet = query.lastIndexOf("set");
+			if(indexOfWhere !=0 && indexOfSet ==0){
+				tableName = query.substring(query.indexOf("update")+5,query.lastIndexOf("where"));
+				json.append(" \"tableName\" : " + "\""+tableName+"\",");
+				json.append(" \"condition\" : " + "\""+query.substring(query.indexOf(tableName)+tableName.length())+"\"");
+				json.append("}");
+				
+			}else if(indexOfWhere !=0 && indexOfSet !=0){
+				tableName = query.substring(query.indexOf("update")+5,query.indexOf("set"));
+				json.append(" \"tableName\" : " + "\""+tableName+"\",");
+				json.append(" \"condition\" : " +"\""+ query.substring(query.indexOf(tableName)+tableName.length())+"\"");
+				json.append("}");
+				
+			}else if(indexOfWhere ==0 && indexOfSet !=0){
+				tableName = query.substring(query.indexOf("update")+5,query.indexOf("set"));
+				json.append(" \"tableName\" : " + "\""+ tableName + "\",");
+				json.append(" \"condition\" : " + "\""+query.substring(query.indexOf(tableName)+tableName.length())+"\"");
+				json.append("}");
+			}/*else{
+				json.append(" \"tableName\" : " + query.substring(query.indexOf("update")+12,query.lastIndexOf("where")));
+				json.append(" \"condition\" : " + " \"\" ");
+				json.append("}");
+			}*/
+			AuditLogUtil.LogItQuery("Updated",json.toString(),tableName,"0.0.0.0","00-00-00-00-00-00",sessionFactoryBuilder);
+		}else if(query.startsWith("delete")){
+			if(query.lastIndexOf("where")!=0){
+				tableName = query.substring(query.indexOf("delete")+12,query.lastIndexOf("where"));
+				//json.append(" \"tableName\" : " + "\""+query.substring(query.indexOf("delete")+12,query.lastIndexOf("where"))+ "\",");
+				json.append("" +getDeleteId(query.substring(query.indexOf("where")+5))+"");
+				json.append("}");
+				//System.out.println();
+			}else{
+				tableName =  query.substring(query.indexOf("delete")+12);
+				//json.append(" \"tableName\" : " +"\""+ query.substring(query.indexOf("delete")+12)+"\",");
+
+				json.append("}");
+			}
+			AuditLogUtil.LogItQuery("Deleted",json.toString(),tableName,"0.0.0.0","00-00-00-00-00-00",sessionFactoryBuilder);
+		}else if(query.startsWith("drop")){
+			tableName = query.substring(query.indexOf("drop")+10);
+			//json.append(" \"tableName\" : " + "\""++"\",");
+				//json.append(" \"condition\" : " + " \"\" ");
+				json.append("}");
+			AuditLogUtil.LogItQuery("drop",json.toString(),tableName,"0.0.0.0","00-00-00-00-00-00",sessionFactoryBuilder);
+		}
+	}
+	private String getDeleteId(String where) {
+		//System.out.println("AuditInfo.getDeleteId()");
+		String total = "";		
+		/*int o=query.indexOf("where");
+		if (o == -1) {
+			o = query.indexOf("WHERE");
+		}
+		total=query.substring(o + 5);*/
+		//where = total;
+		System.out.println("Where=" + where);
+		
+		String response=null;
+		String[] result=null;
+		if(where.contains("and")){
+			result= where.split("and");
+			String[] str=result[0].split("=");
+			//response=str[0].trim()+""+str[1].trim();
+			response="\""+str[0].trim()+"\":\""+str[1].trim()+"\"";
+		}
+		else if(where.contains("=")){
+			result = where.split("=");
+			response="\""+result[0].trim()+"\":\""+result[1].trim()+"\"";
+		} 
+		else{ //in
+			where=where.toLowerCase();
+			String[] column=where.split	("in");
+			where=where.replace(column[0].trim()+" in(", "").replace(")", "");
+			response="\""+column[0].trim()+"\":\""+where.trim()+"\"";
+			//where=where.replace(")", "");
+		}
+		System.out.println("Return id: "+response);
+		return response;
+	}
+}

@@ -1,0 +1,7 @@
+<classpath>
+  <container id="FormGeneratorUtility!org.eclipse.jst.j2ee.internal.web.container">
+    <entry id="D:/PARTH DATA/FormGeneratorUtility/FormUtility SVN WORKSPACE/FormGeneratorUtility/WebContent/WEB-INF/lib/sttl-com.rest-1.0.jar">
+      <source-attachment-path>/FormGeneratorUtility/WebContent/WEB-INF/lib/sttl-com.rest-1.0.jar</source-attachment-path>
+    </entry>
+  </container>
+</classpath>

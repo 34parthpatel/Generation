@@ -1,0 +1,82 @@
+# DEBUG < INFO < WARN < ERROR < FATAL.
+
+#log4j.rootLogger=on,R
+#log4j.rootLogger=DEBUG, R,A1,mail
+log4j.rootLogger=DEBUG, R,email
+log4j.logger.com=DEBUG
+#log4j.logger.org.hibernate=INFO
+#log4j.appender=FILE
+#log4j.appender.A1=org.apache.log4j.DailyRollingFileAppender
+#log4j.appender.A1.DatePattern='.'yyyy-MM-dd
+#log4j.appender.A1.File=${catalina.home}/logs/system.log
+#log4j.appender.A1.Append=TRUE
+#log4j.appender.A1.MaxFileSize=1MB
+#log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+#log4j.appender.A1.layout.ConversionPattern=%d %d{Z} [%t] %-5p %X{sessionId} %c - %m%n
+
+log4j.appender.R=org.apache.log4j.RollingFileAppender
+log4j.appender.R.DatePattern='.'yyyy-MM-dd
+log4j.appender.R.File=${catalina.home}/logs/FGU/project.log
+log4j.appender.R.Append=TRUE
+log4j.appender.R.MaxFileSize=10MB
+log4j.appender.R.MaxBackupIndex=10
+log4j.appender.R.layout=org.apache.log4j.PatternLayout
+log4j.appender.R.layout.ConversionPattern=%d %d{Z} [%t] %-5p [%X{sessionId}] %c - %m%n
+
+#log4j.category.systemLog=INFO, debugLog
+#log4j.additivity.A1=false
+
+#log4j.category.projectLog=DEBUG, reportsLog
+#log4j.additivity.R=false
+
+#log4j.logger.noModule=OFF
+#log4j.logger.com=DEBUG
+#log4j.logger.org.hibernate=ERROR
+#log4j.logger.org.hibernate.impl.SessionImpl=DEBUG
+#log4j.logger.org.apache=ERROR
+#log4j.logger.com.opensymphony=ERROR
+#log4j.logger.com.jgeppert.struts2.jquery=ERROR
+#log4j.logger.org.displaytag=ERROR
+#log4j.logger.freemarker.cache=ERROR
+#log4j.logger.com.sun.mail=ERROR
+#log4j.logger.javax.mail=ERROR
+#log4j.logger.net.sf.jasperreports=ERROR
+#log4j.logger.com.mchange.v2=ERROR
+#log4j.logger.org.quartz=ERROR
+#log4j.logger.org.apache.tiles=OFF
+
+#org.apache.tomcat.util.http.Parameters.level = SEVERE
+# SHOWCASE
+##log4j.logger.com.jgeppert.struts2.jquery=DEBUG
+
+
+# Hibernate logging options (INFO only shows startup messages)
+#log4j.logger.org.hibernate=INFO
+ 
+# Log JDBC bind parameter runtime arguments
+#log4j.logger.org.hibernate.type=INFO
+
+#log4j.logger.org.hibernate.SQL=DEBUG
+#log4j.logger.org.hibernate.type=TRACE
+
+#log4j.logger.com.util.common.mailer=INFO, email
+#log4j.logger.javax.mail=INFO;
+log4j.additivity.com.util.common.mailer=false
+
+log4j.appender.email=org.apache.log4j.net.SMTPAppender
+#log4j.appender.email.SMTPProtocol=smtps
+#log4j.appender.email.SMTPPort=143
+log4j.appender.email.To=parth.patel@silvertouch.com
+log4j.appender.email.From=parth.patel@silvertouch.com
+log4j.appender.email.SMTPHost=silvermail.silvertouch.com
+log4j.appender.email.SMTPUsername=parth.patel@silvertouch.com
+log4j.appender.email.SMTPPassword=PArth$$123
+#log4j.appender.email.Authenticate=true
+log4j.appender.email.smtp.starttls.enable=true
+log4j.appender.email.Threshold=ERROR
+log4j.appender.email.BufferSize=123
+#log4j.appender.email.EvaluatorClass=TriggerLogEvent
+log4j.appender.email.Subject=Application Error
+log4j.appender.email.layout=org.apache.log4j.PatternLayout
+log4j.appender.email.layout.ConversionPattern=%m
+

@@ -1,0 +1,401 @@
+package com.controller;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.bean.PageMapping;
+import com.bean.TblFormSchema;
+import com.service.FormUtilityService;
+import com.util.common.CommonUtility;
+
+@Controller
+public class FormUtilityController {
+	
+	@Autowired
+	private FormUtilityService formUtilityService;
+	
+	@Autowired
+	private CommonUtility commonUtility;
+	
+	@RequestMapping(value="/genrateClass" ,method = RequestMethod.GET)
+	public String genrateClass(ModelMap model) {
+		model.addAttribute("message", "Hello Spring MVC Framework!");
+		formUtilityService.genrateClass();
+		return "GenrateClass";
+	}
+	
+	@RequestMapping(value="/updateForm" ,method = RequestMethod.POST)
+	public String updateForm(ModelMap model,HttpServletRequest request) {
+		String pageMappingId  =  request.getParameter("pageMappingId");
+		
+		PageMapping pageMappingObj = formUtilityService.getPageMappingData(pageMappingId);
+		System.out.println("Request "+ request.getParameter("pageMappingId"));
+		
+		List<TblFormSchema> listFormSchemas = formUtilityService.getListTableFormSchema(pageMappingId);
+		System.out.println("Count " + listFormSchemas.size());
+		
+		String formTableString =formUtilityService.genrateHTMLFormTableString(listFormSchemas) ;
+		System.out.println("formTableString"+formTableString);
+		
+		//formUtilityService.genrateClass();
+		model.put("pageID",pageMappingId);
+		model.put("counter",listFormSchemas.size()+1);
+		model.put("htmlFormTable", formTableString);
+		model.put("pageName", pageMappingObj.getPageName());
+		
+		return "updateForm";
+	}
+	
+	@RequestMapping(value="/genrateClassFromTable" ,method = RequestMethod.POST)
+	public String genrateClassFromTable(ModelMap model,HttpServletRequest request) {
+		model.addAttribute("message", "Hello Spring MVC Framework!");
+		String buildPath =request.getServletContext().getRealPath("/");
+		System.out.println("build path: " + buildPath);
+		if(formUtilityService.genrateClassFromTable("tbl_form_schema",buildPath)){
+			
+		}else{
+			
+		}
+		// System.out.println( request.getServletContext().getRealPath("/"));
+		return "GenrateClass";
+	}
+	
+	@RequestMapping(value="/insertForm/{path}", method = RequestMethod.POST)
+	public String insertForm(@PathVariable("path") String path, HttpServletRequest request, ModelMap model, RedirectAttributes redirectAttrs) throws Exception {
+	    String remainingPaths = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+	    String className = path.substring(0, 1).toUpperCase() + path.substring(1);
+	    
+		Class<?> clazz;
+		try {
+			clazz = Class.forName(commonUtility.getValueFromPropertieFile("beanPackage")+"."+className);
+			Object clsObject = clazz.newInstance();
+			
+			System.out.println("" + clsObject.getClass());
+			Object dataObject = commonUtility.buindDataInObject(clsObject, clsObject.getClass(),request);
+			System.out.println(dataObject);
+			HashMap<String, String> validateMessages =commonUtility.hibernateValidation(clsObject.getClass(), dataObject); 
+			if(validateMessages==null){
+				
+				if (formUtilityService.insertData(dataObject, clsObject.getClass())) {
+					redirectAttrs.addFlashAttribute("message", "Data inserted successfully!");
+				} else {
+					redirectAttrs.addFlashAttribute("errMessage", "Data insertion fail");
+				}
+			}else{
+				System.out.println(validateMessages);
+				StringBuilder errorMessage = new StringBuilder();
+				for(Map.Entry<String, String>  validationMsg :  validateMessages.entrySet()){
+					errorMessage.append(validationMsg.getValue() +"\n");
+				}
+				redirectAttrs.addFlashAttribute("errMessage", errorMessage.toString());
+			}
+		}catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
+	   
+	    
+	   // ModelAndView modelAndView = new ModelAndView("redirect:openForm/"+path);
+	    
+	    return "redirect:../openForm/"+path;
+	}
+	
+	@RequestMapping(value="/openForm/{path}", method = RequestMethod.GET)
+	public String openForm(@PathVariable("path") String path, HttpServletRequest request, ModelMap model) throws Exception {
+	    String remainingPaths = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+	    System.out.println("path = " + path + "/" + remainingPaths);
+	    String buildPath =request.getServletContext().getRealPath("/");
+	    try
+		{
+	    	/*			
+			String pageName = (String) model.get("pageName");
+			String compileLocation = request.getServletContext().getRealPath("/");
+	    	 */		
+	    	List list = formUtilityService.getListDataFromModelName(path.substring(0, 1).toUpperCase() + path.substring(1)) ;
+	    	System.out.println("datalist"+list);
+			//model.addAttribute("message", "Form Generated Successfully!");
+			model.addAttribute("listData",list);
+			return path;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return "error";
+		}
+	    
+	    
+	    
+	    //return path;
+	}
+	
+	//Parth Code.
+	
+	@RequestMapping(value="/error" ,method = RequestMethod.GET)
+	public String errorPage(ModelMap model) {
+		model.addAttribute("message", "!");
+		return "error";
+	}
+	/*
+	@RequestMapping(value="/emp" ,method = RequestMethod.GET)
+	public String emp(ModelMap model, HttpServletRequest request) {
+		
+		try
+		{
+			int fk = (int) model.get("fk");
+			
+			String pageName = (String) model.get("pageName");
+			System.out.println("--- " + fk+ " " + pageName);
+			String compileLocation = request.getServletContext().getRealPath("/");
+			
+			List<TblFormSchema> list = formUtilityService.getTableFormSchemaData(fk);
+			formUtilityService.generateForm(list, pageName, compileLocation);
+			model.addAttribute("message", "Form Generated Successfully!");
+			return pageName;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return "error";
+		}
+	}
+	*/
+	/*@RequestMapping(value="/{path}", method = RequestMethod.POST)
+	public String categoryTest(@PathVariable("path") String path, HttpServletRequest request, ModelMap model) throws Exception {
+	    String remainingPaths = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+	    System.out.println("path = " + path + "/" + remainingPaths);
+	    model.addAttribute("message", "Done!");
+	    return path;
+	}*/
+	
+	/*@RequestMapping(value="/generateTable" ,method = RequestMethod.POST)
+	public ModelAndView generateTable(RedirectAttributes redirect, HttpServletRequest request) {
+		String[] fld_ctrl = request.getParameterValues("fld_ctrl");
+		String[] fld_type = request.getParameterValues("fld_type");
+		String[] fld_lbl = request.getParameterValues("fld_lbl");
+		String[] fld_name = request.getParameterValues("fld_name");
+		String[] fld_size = request.getParameterValues("fld_size");
+		String[] fld_val = request.getParameterValues("fld_val");
+		String[] fld_index = request.getParameterValues("fld_index");
+		String pageName = request.getParameter("pageName");
+		
+		int cntRad = 0;
+		for(int i=0;i<fld_ctrl.length;i++)
+		{
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("checkBox"))
+			{
+				System.out.println(fld_ctrl[i] + " " + fld_type[i] + " " + fld_lbl[i] + " " + fld_name[i] + " '" + fld_size[i] + "' " + fld_val[cntRad]);
+				cntRad++;
+			}
+			else
+			{
+				System.out.println(fld_ctrl[i] + " " + fld_type[i] + " " + fld_lbl[i] + " " + fld_name[i] + " " + fld_size[i]);
+			}
+			
+		}
+		
+		System.out.println(Arrays.toString(fld_val));
+		PageMapping pageMapping = new PageMapping();
+		pageMapping.setPageName(pageName);
+		
+		int pageMappingId = formUtilityService.insertPageMappingData(pageMapping);
+		System.out.println("pageMappingId : " + pageMappingId);
+		
+		formUtilityService.insertFieldData(fld_ctrl,fld_type, fld_lbl, fld_name, fld_size, fld_val,fld_index,pageMappingId);
+		
+		String compileLocation = request.getServletContext().getRealPath("/");
+		List<TblFormSchema> list = formUtilityService.getTableFormSchemaData(pageMappingId);
+		formUtilityService.generateForm(list, pageName, compileLocation);
+		
+		formUtilityService.createTable(pageName, fld_ctrl, fld_name, fld_type, fld_size, fld_val);
+		
+		//Bhadresh Bajariya
+		String buildPath =request.getServletContext().getRealPath("/");
+		
+		if(formUtilityService.genrateClassFromTable(pageName,buildPath)){
+			
+		}else{
+			
+		}
+		
+		ModelAndView modelAndView = new ModelAndView("redirect:openForm/"+pageName);
+		
+		redirect.addFlashAttribute("pageName", pageName);
+		return modelAndView;
+	}*/
+
+	@RequestMapping(value = "/generateTable", method = RequestMethod.POST)
+	public ModelAndView generateTable(RedirectAttributes redirect, HttpServletRequest request) {
+		String[] fld_ctrl = request.getParameterValues("fld_ctrl");
+		String[] fld_type = request.getParameterValues("fld_type");
+		String[] fld_lbl = request.getParameterValues("fld_lbl");
+		String[] fld_name = request.getParameterValues("fld_name");
+		String[] fld_size = request.getParameterValues("fld_size");
+		String[] fld_val = request.getParameterValues("fld_val");
+		String[] fld_index = request.getParameterValues("fld_index");
+		String pageName = request.getParameter("pageName").trim();
+
+		System.out.println("Field " + Arrays.toString(fld_name).replace('[', ',').replace(']', ','));
+		if(Arrays.toString(fld_name).replace("[", ", ").replace(']', ',').toLowerCase().contains(", id,")){
+			ModelAndView modelAndView = new ModelAndView("redirect:index");
+			redirect.addFlashAttribute("errMsg", "Id field Can not be inserted,Its By default!");
+			return modelAndView;
+		}
+		
+		try {
+			if (pageName.equals("") || commonUtility.checkNull(fld_ctrl) || commonUtility.checkNull(fld_type)
+					|| commonUtility.checkNull(fld_lbl) || commonUtility.checkNull(fld_name)
+					|| commonUtility.checkNull(fld_index)) {
+				ModelAndView modelAndView = new ModelAndView("redirect:index");
+				redirect.addFlashAttribute("errMsg", "Please insert proper data!");
+				return modelAndView;
+			}
+			
+			if (pageName != "" && pageName != null) {
+				if (formUtilityService.isPageExist(pageName)) {
+					ModelAndView modelAndView = new ModelAndView("redirect:index");
+					redirect.addFlashAttribute("errMsg", "Page already exist!");
+					return modelAndView;
+				}
+			}
+
+			for (int i = 0; i < fld_ctrl.length; i++) {
+				System.out.println(fld_ctrl[i] + " '" + fld_type[i] + "' '" + fld_lbl[i] + "' '" + fld_name[i] + "' '"
+						+ fld_size[i] + "' '" + fld_val[i] + "' '" + fld_index[i]);
+			}
+
+			PageMapping pageMapping = new PageMapping();
+			pageMapping.setPageName(pageName);
+
+			int pageMappingId = formUtilityService.insertPageMappingData(pageMapping);
+			System.out.println("pageMappingId : " + pageMappingId);
+
+			formUtilityService.insertFieldData(fld_ctrl, fld_type, fld_lbl, fld_name, fld_size, fld_val, fld_index,
+					pageMappingId);
+
+			String compileLocation = request.getServletContext().getRealPath("/");
+			List<TblFormSchema> list = formUtilityService.getTableFormSchemaData(pageMappingId);
+			formUtilityService.generateForm(list, pageName, compileLocation);
+
+			formUtilityService.createTable(pageName, fld_ctrl, fld_name, fld_type, fld_size, fld_val);
+			// Bhadresh Bajariya
+			String buildPath = request.getServletContext().getRealPath("/");
+
+			if (formUtilityService.genrateClassFromTable(pageName, buildPath)) {
+
+			} else {
+
+			}
+			// End Code
+
+			ModelAndView modelAndView = new ModelAndView("redirect:openForm/" + pageName);
+			redirect.addFlashAttribute("pageName", pageName);
+			return modelAndView;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ModelAndView("error").addObject("errMsg", "Please insert proper data!");
+		}
+
+	}
+	
+	@RequestMapping(value="/updateTable" ,method = RequestMethod.POST)
+	public ModelAndView updateTable(RedirectAttributes redirect, HttpServletRequest request) {
+		String[] fld_ctrl = request.getParameterValues("fld_ctrl");
+		String[] fld_type = request.getParameterValues("fld_type");
+		String[] fld_lbl = request.getParameterValues("fld_lbl");
+		String[] fld_name = request.getParameterValues("fld_name");
+		String[] fld_size = request.getParameterValues("fld_size");
+		String[] fld_val = request.getParameterValues("fld_val");
+		String[] fld_index = request.getParameterValues("fld_index");
+		System.out.println("Field " + Arrays.toString(fld_name).replace('[', ',').replace(']', ','));
+		String pageName = request.getParameter("pageName");
+		int pageId = Integer.parseInt( request.getParameter("tableId"));
+		if(Arrays.toString(fld_name).replace("[", ", ").replace(']', ',').toLowerCase().contains(", id,")){
+			ModelAndView modelAndView = new ModelAndView("redirect:index");
+			redirect.addFlashAttribute("errMsg", "Id field Can not be inserted,Its By default!");
+			return modelAndView;
+		}
+		
+		if (pageName.equals("") || commonUtility.checkNull(fld_ctrl) || commonUtility.checkNull(fld_type)
+				|| commonUtility.checkNull(fld_lbl) || commonUtility.checkNull(fld_name)
+				|| commonUtility.checkNull(fld_index)) {
+			ModelAndView modelAndView = new ModelAndView("redirect:index");
+			redirect.addFlashAttribute("errMsg", "Please insert proper data!");
+			return modelAndView;
+		}
+		
+		//Delete old field from Table
+		formUtilityService.deletePageTableFields(pageId);
+		System.out.println(Arrays.toString(fld_type));
+		PageMapping pageMapping = new PageMapping();
+		pageMapping.setPageName(pageName);
+		System.out.println("Delete data done");
+		
+		//Insert field in Table
+		formUtilityService.insertFieldData(fld_ctrl,fld_type, fld_lbl, fld_name, fld_size,fld_val,fld_index, pageId);
+		System.out.println("Insert field data done");
+		
+		formUtilityService.updateTableSchema(pageName, fld_name, fld_type, fld_size, fld_ctrl, fld_val);
+		System.out.println("Table data update done");
+		
+		//Bhadresh Bajariya
+		String buildPath =request.getServletContext().getRealPath("/");
+		
+		if(formUtilityService.genrateClassFromTable(pageName,buildPath)){
+			//Recreate form
+			String compileLocation = request.getServletContext().getRealPath("/");
+			List<TblFormSchema> list = formUtilityService.getTableFormSchemaData(pageId);
+			formUtilityService.generateForm(list, pageName, compileLocation);
+			System.out.println("Form Genration is done ");
+			//update table schema
+		}else{
+			
+		}
+		System.out.println("Class Genration is done ");
+		//End Code
+	
+		ModelAndView modelAndView = new ModelAndView("redirect:index");
+		/*redirect.addFlashAttribute("fk", pageId);
+		redirect.addFlashAttribute("pageName", pageName);*/
+		return modelAndView;
+	}
+	
+	@RequestMapping(value="/dropForm" ,method = RequestMethod.POST)
+	public ModelAndView dropForm(ModelMap model, HttpServletRequest request) {
+		System.out.println(request.getParameter("pageMappingId"));
+		int pageMappingId = Integer.parseInt(request.getParameter("pageMappingId"));
+		String pageMappingName = request.getParameter("pageMappingName");
+		String compileLocation = request.getServletContext().getRealPath("/");
+		
+		formUtilityService.dropForm(pageMappingId, pageMappingName, compileLocation);
+		
+		return new ModelAndView("redirect:index");
+	}
+	@RequestMapping(value="/index" ,method = RequestMethod.GET)
+	public String index(ModelMap model) {
+		System.out.println("...");
+		List<PageMapping> liPageMappings = formUtilityService.getPageMappingData();
+		model.put("liPageMappings", liPageMappings);
+		return "index";
+	}
+}

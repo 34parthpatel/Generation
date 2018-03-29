@@ -1,0 +1,97 @@
+package com.bean;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.GenericGenerator;
+
+@Entity
+@Table(name = "file_upload")
+public class FileUpload {
+	@Id
+	@GenericGenerator(name = "increment", strategy = "org.hibernate.id.IncrementGenerator")
+	@GeneratedValue(generator = "increment")
+	int id;
+
+	@Column(name = "fileName")
+	String fileName;
+	
+	@Column(name = "fileType")
+	String fileType;
+	
+	@Column(name = "tableName")
+	String tableName;
+	
+	@Column(name = "tableId")
+	int tableId;
+	
+	@Column(name = "fileData")
+	byte file[];
+
+	@Column(name="extension")
+	String extension;
+	
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFileType() {
+		return fileType;
+	}
+
+	public void setFileType(String fileType) {
+		this.fileType = fileType;
+	}
+
+	public String getTableName() {
+		return tableName;
+	}
+
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
+	}
+
+	public int getTableId() {
+		return tableId;
+	}
+
+	public void setTableId(int tableId) {
+		this.tableId = tableId;
+	}
+
+	public byte[] getFile() {
+		return file;
+	}
+
+	public void setFile(byte[] file) {
+		this.file = file;
+	}
+
+	public String getExtension() {
+		return extension;
+	}
+
+	public void setExtension(String extension) {
+		this.extension = extension;
+	}
+
+	@Override
+	public String toString() {
+		return "fileName : " + fileName + ", fileType : " + fileType + ", tableName : " + tableName + ", tableId : " + tableId + ", extension : " + extension +", fileData : " + file;
+	}
+}

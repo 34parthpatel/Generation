@@ -1,0 +1,85 @@
+
+
+function dropForm(id)
+{
+	var val = confirm("Are you sure want to drop page?");
+	if(val == true)
+	{
+		return true;
+	}
+	return false;
+}
+
+/*$("#password").password('toggle');*/
+
+function checkForm() {
+	var pageName = $("#pageName").val();
+	if(pageName.trim() == null || pageName.trim() == "")
+	{
+		$("#errMsg").text("Please insert page name.");
+		return false;
+	}
+	if(/[^a-zA-Z0-9_]/.test(pageName)) {
+		$("#errMsg").text("Special characters and space not allow in Page Name / Table Name.");
+	    return false;
+	}
+	
+	var status = true;
+	
+	//var values = [];
+	$('input[name="fld_lbl"]').each(function() {
+	    //values.push($(this).val());
+	    if($(this).val().trim() == null || $(this).val().trim() == "")
+	    {
+	    	$("#errMsg").text("Please insert proper data.");
+	    	status = false;
+	    }
+	});
+	
+	$('input[name="fld_name"]').each(function() {
+	    if($(this).val().trim() == null || $(this).val().trim() == "")
+	    {
+	    	$("#errMsg").text("Please insert proper data.");
+	    	status = false;
+	    }
+	});
+	
+	$('input[name="fld_index"]').each(function() {
+	    if($(this).val().trim() == null || $(this).val().trim() == "")
+	    {
+	    	$("#errMsg").text("Please insert proper data.");
+	    	status = false;
+	    }
+	});
+	
+	$('input[name="fld_name"]').each(function() {
+	    if($(this).val().trim().toLowerCase() == 'id')
+	    {
+	    	$("#errMsg").text("ID field can not be inserted, Its By default!");
+	    	status = false;
+	    }
+	});
+	
+	$('textarea').each(function(){
+	    if($(this).val().trim().length < 2){
+	        $("#errMsg").text("Please insert proper data.");
+	        status = false;
+	    }
+	});
+	
+	if(!status)
+	{
+		return false;
+	}
+	
+	return true;
+}
+
+function showPassword(id) {
+    var x = document.getElementById(id);
+    if (x.type === "password") {
+        x.type = "text";
+    } else {
+        x.type = "password";
+    }
+}

@@ -1,0 +1,52 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import org.hibernate.validator.Pattern; 
+ import javax.persistence.Table; 
+ import com.sttl.hibernate.custom.validation.RangeValidation; 
+ @Entity 
+@Table(name="Employee") 
+public class Employee implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+@org.hibernate.validator.NotNull(message="ID can not be null")@org.hibernate.validator.Range(min=1,message="ID can not be null")
+ @Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+ return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+@org.hibernate.validator.NotNull(message="Emp Code can not be null")@org.hibernate.validator.Range(min=1,message="Emp Code can not be null")
+ @Column(name="emp_code")
+Integer emp_code ; 
+ 
+public Integer getEmp_code() { 
+ return emp_code; 
+} 
+public void setEmp_code(Integer emp_code) { 
+this.emp_code = emp_code; 
+} 
+@org.hibernate.validator.NotNull(message="Emp Name can not be null")@org.hibernate.validator.Length(max=15, message ="Emp Name Data must be in Proper length.")
+@Pattern(regex="^[A-Za-z]{0,}$",message="Enter proper Emp Name.")
+ @Column(name="emp_name")
+String emp_name ; 
+ 
+public String getEmp_name() { 
+ return emp_name; 
+} 
+public void setEmp_name(String emp_name) { 
+this.emp_name = emp_name; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+emp_code+emp_name); 
+  return "" ; 
+	}
+ }

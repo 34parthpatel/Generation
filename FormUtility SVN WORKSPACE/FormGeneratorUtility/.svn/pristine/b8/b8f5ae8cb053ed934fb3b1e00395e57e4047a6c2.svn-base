@@ -1,0 +1,57 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="company") 
+public class Company implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+	return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+	@Column(name="cmpid")
+Integer cmpid ; 
+ 
+public Integer getCmpid() { 
+	return cmpid; 
+} 
+public void setCmpid(Integer cmpid) { 
+this.cmpid = cmpid; 
+} 
+	@Column(name="cmpname")
+String cmpname ; 
+ 
+public String getCmpname() { 
+	return cmpname; 
+} 
+public void setCmpname(String cmpname) { 
+this.cmpname = cmpname; 
+} 
+	@Column(name="cmptype")
+String cmptype ; 
+ 
+public String getCmptype() { 
+	return cmptype; 
+} 
+public void setCmptype(String cmptype) { 
+this.cmptype = cmptype; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+cmpid+cmpname+cmptype); 
+  return "" ; 
+	}
+ }

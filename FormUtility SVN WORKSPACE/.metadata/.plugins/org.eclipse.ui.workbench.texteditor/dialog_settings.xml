@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item value="331" key="DIALOG_WIDTH"/>
+		<item value="22" key="DIALOG_Y_ORIGIN"/>
+		<item value="8" key="DIALOG_X_ORIGIN"/>
+		<item value="411" key="DIALOG_HEIGHT"/>
+		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item value="true" key="wrap"/>
+		<item value="false" key="casesensitive"/>
+		<item value="false" key="isRegEx"/>
+		<item value="false" key="incremental"/>
+		<item value="false" key="wholeword"/>
+		<item value="checkFileValidation" key="selection"/>
+		<list key="findhistory">
+			<item value="checkFileValidation"/>
+			<item value="uploadFile"/>
+			<item value="call"/>
+			<item value="getMagicMatch"/>
+			<item value="MIME-"/>
+			<item value="stringJsonToHtml"/>
+			<item value="deleteUploadedFile"/>
+			<item value="getDataById"/>
+		</list>
+		<list key="replacehistory">
+			<item value=" "/>
+			<item value="text"/>
+			<item value="dateCnt"/>
+			<item value="idNo"/>
+			<item value="^[1-9]{1}[0-9]{0,}([,][0-9])?$"/>
+			<item value="^[1-9]{1,}([,][0-9])?$"/>
+			<item value="^[A-Za-z0-9]{1}[A-Za-z0-9\\s]{0,}$"/>
+			<item value="^[0-9]{1,}([,][0-9])?$"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.GotoLineAction$GotoLineDialog_dialogBounds">
+		<item value="376" key="DIALOG_Y_ORIGIN"/>
+		<item value="409" key="DIALOG_X_ORIGIN"/>
+	</section>
+</section>

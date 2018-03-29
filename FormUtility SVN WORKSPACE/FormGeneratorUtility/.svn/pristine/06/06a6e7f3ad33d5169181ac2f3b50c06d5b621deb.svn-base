@@ -1,0 +1,4 @@
+$('.datetimepicker').datetimepicker({
+	lang:'en',
+	format: 'Y-m-d H:i',
+});

@@ -1,0 +1,42 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import org.hibernate.validator.Pattern; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="temp1") 
+public class Temp1 implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+@org.hibernate.validator.NotNull(message="ID can not be null")@org.hibernate.validator.Range(min=1,message="ID can not be null")
+ @Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+ return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+@org.hibernate.validator.NotNull(message="digit can not be null")@org.hibernate.validator.Range(min=1,message="digit can not be null")
+ @Column(name="digit")
+Integer digit ; 
+ 
+public Integer getDigit() { 
+ return digit; 
+} 
+public void setDigit(Integer digit) { 
+this.digit = digit; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+digit); 
+  return "" ; 
+	}
+ }

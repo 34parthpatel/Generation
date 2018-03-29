@@ -1,0 +1,1471 @@
+package com.dao;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.web.servlet.ModelAndView;
+import org.w3c.dom.ls.LSInput;
+
+import com.bean.HtmlElement;
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.util.common.CommonUtility;
+import com.util.hibernate.operation.Operation;
+import com.util.jdbc.operation.JDBCOperation;
+import com.util.jdbc.util.JDBCUtil;
+
+@Repository("formUtilityDao")
+public class FormUtilityDaoImpl implements FormUtilityDao {
+
+	@Autowired
+	JDBCUtil jdbcUtil;
+
+	@Autowired
+	CommonUtility commonUtility;
+	
+	@Autowired
+	Operation hibernateOperation;
+	
+	@Override
+	public void genrateClass() {
+		// TODO Auto-generated method stub
+		System.out.println("hello");
+	}
+
+	@Override
+	public boolean generateClassFromTable(String tableName, String buildPath,Map<String, TblFormSchema> tableFormSchemaMap) {
+		// TODO Auto-generated method stub
+		Connection connection = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		ResultSet resultSetOfPK = null;
+		ResultSet resultSetForAutoIncrement = null;
+		StringBuffer classFileData = new StringBuffer();
+		StringBuffer toStringMethod = new StringBuffer();
+		toStringMethod.append("System.out.println(\" To String method \"  ");
+		classFileData.append("package "+commonUtility.getValueFromPropertieFile("beanPackage")+";  \n" + "import java.io.Serializable; \n");
+		classFileData.append("import javax.persistence.Column;\n" + " import javax.persistence.Entity; \n "
+				+ "import javax.persistence.GeneratedValue;\n import javax.persistence.GenerationType; \n"
+				+ " import javax.persistence.Id; \n"
+				+ " import org.hibernate.validator.Pattern; \n"
+				// + " import javax.persistence.NamedQuery; \n"
+				+ " import javax.persistence.Table; \n " + "import com.sttl.hibernate.custom.validation.RangeValidation; \n " );
+
+		classFileData.append("@Entity \n" + "@Table(name=\"" + tableName + "\") \n");
+		classFileData.append("public class " + tableName.substring(0, 1).toUpperCase() + tableName.substring(1)
+				+ " implements Serializable {\n");
+
+		try {
+			connection = jdbcUtil.getConnection();
+			DatabaseMetaData dbmd;
+
+			dbmd = connection.getMetaData();
+			String[] types = { "TABLE" };
+			resultSet = dbmd.getColumns(null, null, tableName, "%");
+
+			// This code for get Primarykey Column
+			resultSetOfPK = dbmd.getPrimaryKeys(null, null, tableName);
+			Set<String> primaryKeys = new HashSet<>();
+			while (resultSetOfPK.next()) {
+				// System.out.println("Primary key id " + );
+				primaryKeys.add(resultSetOfPK.getString(4));
+			}
+			statement = connection.createStatement();
+
+			// This code for get AutoincrementColumn
+			Set<String> autoIncrementColumn = new HashSet<>();
+			resultSetForAutoIncrement = statement.executeQuery("SELECT * FROM " + tableName);
+			ResultSetMetaData rsmd = resultSetForAutoIncrement.getMetaData();
+			int columnCount = rsmd.getColumnCount();
+			for (int i = 1; i <= columnCount; i++) {
+				String name = rsmd.getColumnName(i);
+				if (rsmd.isAutoIncrement(i)) {
+					autoIncrementColumn.add(name);
+				}
+			}
+
+			// Create getter and setter for java file.
+			while (resultSet.next()) {
+				String fieldName = resultSet.getString(4);
+
+				String fieldType = resultSet.getString(6);
+				int typeCode = resultSet.getInt(5);
+				String fieldSize = resultSet.getString(7);
+				
+
+				if (primaryKeys.contains(fieldName)) {
+					classFileData.append("	@Id  \n");
+				}
+				if (autoIncrementColumn.contains(fieldName)) {
+					/*classFileData
+							.append("@GenericGenerator(name = \"increment\", strategy = \"org.hibernate.id.IncrementGenerator\") \n"
+									+ "@GeneratedValue(generator = \"increment\") \n");*/
+					
+					classFileData.append("	@GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+				}
+				System.out.println("field name :"+fieldName.toLowerCase());
+				if( tableFormSchemaMap.get(fieldName.toLowerCase()) != null?tableFormSchemaMap.get(fieldName.toLowerCase()).getFieldController().equals("password"):false){
+					
+					String dataType = commonUtility.getSqlTypeName(typeCode);
+					// fieldName = fieldName.substring(0, 1).toUpperCase() +
+					// fieldName.substring(1);
+					String fieldNameForMethod = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+					String getterSetter = "@org.hibernate.validator.NotNull(message=\""+fieldName+" can not be null\")"
+							+ "@org.hibernate.validator.Length(max="+fieldSize+", message =\""+fieldName+"Data must be in Proper length.\")\n"
+						+ "@Pattern(regex=\""+tableFormSchemaMap.get(fieldName).getRegex().replace("//","\\\\")+"\",message=\"Enter proper "+fieldName+".\")\n"
+							+ " @Column(name=\"" + fieldName + "\")\n"
+					// + " @Getter \n" + " @Setter \n" + " "
+							+ dataType + " " + fieldName + " ; \n \n" + "public " + dataType + " get" + fieldNameForMethod
+							+ "() { \n" + " return " + fieldName + "; \n" + "} \n" + "public void set" + fieldNameForMethod + "("
+							+ dataType + " " + fieldName + ") { \n" + "this." + fieldName + " = " + fieldName + "; \n" + "} \n";
+					classFileData.append(getterSetter);
+					
+				}else {
+					classFileData.append(commonUtility.createGetterSatter(fieldType, fieldName, typeCode,fieldSize,tableFormSchemaMap.get(fieldName.toLowerCase())));
+					//System.out.println("Regex : " + regexMapWithName.get(fieldName).replace("\\","\\\\"));
+				}
+				toStringMethod.append("+"+fieldName);
+								/*
+				 * System.out.println("Field Name: "+fieldName);
+				 * System.out.println("Table catalog :" + fieldType);
+				 * System.out.println("Table Schema :" + fieldSize);
+				 * System.out.println("===================" +
+				 * resultSet.getString(11));
+				 */
+			}
+			toStringMethod.append("); \n");
+			
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} finally {
+			try {
+				resultSet.close();
+				resultSetForAutoIncrement.close();
+				resultSetOfPK.close();
+				statement.close();
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		classFileData.append("	@Override \n"
+							+ "	public String toString() { \n"
+							+ "" + toStringMethod.toString() +" "
+							+ " return \"\" ; \n"
+							+ "	}\n" ) ;
+		classFileData.append(" }");
+		System.out.println(classFileData.toString());
+		String javaFileUri = commonUtility.getValueFromPropertieFile("javaFileLocation")
+				+ tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+		if (!commonUtility.createFile(javaFileUri, classFileData.toString(), "java")) {
+			
+			return false;
+		}
+		//buildPath + "WEB-INF\\classes\\com\\bean\\"
+		commonUtility.createFile(buildPath + "WEB-INF\\classes\\"+  commonUtility.getValueFromPropertieFile("beanFilePath") +tableName.substring(0, 1).toUpperCase() + tableName.substring(1), classFileData.toString(), "java");
+		
+		if (commonUtility.compileJavaFile(buildPath + "WEB-INF\\classes\\"+ commonUtility.getValueFromPropertieFile("beanFilePath")+tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + ".java")) {
+			System.out.println("Class Compile on server is done");
+			return true;
+		}
+	
+		// compiler.run(null, null,
+		// null,commonUtility.getValueFromPropertieFile("javaFileLocation")+tableName.substring(0,
+		// 1).toUpperCase() + tableName.substring(1)+".java" );
+		// System.out.println( System.getProperty("java.class.path"));
+		// System.out.println("Final code is \n"+ classFileData.toString());
+		return false;
+	}
+
+	
+	@Override
+	public boolean insertData(Object dataObject, Class<?> cls) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.insertData(dataObject, cls);	
+	}
+	
+	//Parth code.
+	
+	
+	@Override
+	public List<TblFormSchema> getTableFormSchemaData(int fk) {
+		// TODO Auto-generated method stub
+		List<TblFormSchema> list = hibernateOperation.listDataWithWhreClause("TblFormSchema", "fk="+fk + " order by field_index");
+		
+		return list;
+	}
+	
+	@Override
+	public void generateForm(List<TblFormSchema> list, String pageName, String compileLocation)
+	{
+		
+		List<HtmlElement> htmlElements = hibernateOperation.listData("HtmlElement");
+		List<RegexPattern> regexPatterns = hibernateOperation.listData("RegexPattern");
+		
+		StringBuilder htmlStringBuilder=new StringBuilder();
+		StringBuilder listHeader = new StringBuilder();
+		StringBuilder listField = new StringBuilder();
+		StringBuilder alertString = new StringBuilder();
+		String scriptHTML = "";
+		String scriptCheckFormData = "$(function(){ $('#submit"+pageName+"').click(function() {";
+		String customJsRules = "options = { rules : { ";
+		String customJsMessages = "},messages : { en : { ";
+		
+		htmlStringBuilder.append("<%@taglib prefix=\"c\" uri=\"http://java.sun.com/jsp/jstl/core\" %>"
+				+ "<!DOCTYPE html ><html><head><title>"+pageName+"</title>");
+		htmlStringBuilder.append("<link rel=\"stylesheet\" href=\"../css/bootstrap.min.css\">" +
+			"<link rel=\"stylesheet\" href=\"../css/jquery.datetimepicker.min.css\">" +
+			"<link rel=\"stylesheet\" href=\"../css/forms.css\">" +
+			"<script src=\"../js/jquery-3.2.1.min.js\"></script>" +
+			"<script src=\"../js/bootstrap.min.js\"></script>" +
+			"<script src=\"../js/jquery.datetimepicker.full.js\"></script>" +
+			"<script src=\"../js/formutility.js\"></script>"+
+			"<script src=\"../js/custom_alert.js\"></script>" +
+			"<script src=\"../js/bootstrap-show-password.min.js\"></script>" +
+			"<script src=\"../js/js-form-validator.min.js\"></script>");
+		htmlStringBuilder.append("</head>");
+		htmlStringBuilder.append("<body>");
+		htmlStringBuilder.append("<a href='../index' class='glyphicon glyphicon-home btn-lg' style='margin: 10px 20px; color: black;'></a>");
+		htmlStringBuilder.append("<div class=\"container\">");
+		htmlStringBuilder.append("<center><h2>" +pageName+ "</h2></center>");
+		htmlStringBuilder.append("<form action=\"../insertForm/"+pageName+"\" id=\"id"+pageName+"\" class=\"form-horizontal\" method=\"post\" >");
+		
+		for(int i=0;i<list.size();i++)
+		{
+			String titleMessage ;
+			TblFormSchema tblFormSchema = list.get(i);
+			
+			if(tblFormSchema == null){
+				continue;
+			}
+			
+			List<RegexPattern> listRegexPatterns = hibernateOperation.listData("RegexPattern");
+			List<String> jsValidationList = commonUtility.getJsValidationName(listRegexPatterns, tblFormSchema.getRegex());
+			
+			if(!(tblFormSchema.getFieldController().equals("alert") || tblFormSchema.getFieldController().equals("hyperlink"))){
+				listHeader.append("<th>"+tblFormSchema.getFieldLabel()  + "</th>");
+				listField.append("<td class=\"col-m-2\"><c:out value=\"${obj."+tblFormSchema.getFieldName().toLowerCase()+"}\" /></td>");	
+			}
+			
+			if(!tblFormSchema.getFieldController().equals("alert"))
+			{
+				htmlStringBuilder.append("<div class=\"form-group\">");
+				htmlStringBuilder.append("<label class=\"control-label col-sm-4\">"+tblFormSchema.getFieldLabel() + "</label>");
+				htmlStringBuilder.append("<div class=\"col-sm-5\">");
+			}
+			//patternId = commonUtility.getRegexPatternId(tblFormSchema.getFieldType());
+			/*if(tblFormSchema.getFieldController().equals("password")){
+				patternId = commonUtility.getRegexPatternId("password");
+			}*/
+			titleMessage = commonUtility.getRegexPatternTitle(regexPatterns,tblFormSchema.getRegex());
+			
+			if(tblFormSchema.getFieldController().equals("textbox"))
+			{
+				System.out.println("Size of js validation"  + jsValidationList.size());
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				htmlStringBuilder.append(htmlElements.get(0).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":maxlength", tblFormSchema.getSize()+"")
+						+ " data-rule=\"required|"+jsValidationList.get(0)+"\" />");
+				customJsRules += jsValidationList.get(1);
+				customJsMessages += jsValidationList.get(2);
+			}
+			if(tblFormSchema.getFieldController().equals("password"))
+			{
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				htmlStringBuilder.append(htmlElements.get(6).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":maxlength", tblFormSchema.getSize()+"")
+						+ " data-rule=\"required|"+jsValidationList.get(0)+"\" />");
+				htmlStringBuilder.append("<input type=\"checkbox\" onclick=\"showPassword('"+tblFormSchema.getFieldName()+"')\" >Show Password");
+				customJsRules += jsValidationList.get(1);
+				customJsMessages += jsValidationList.get(2);
+				System.out.println("psw " + titleMessage );
+			}
+			if(tblFormSchema.getFieldController().equals("number"))
+			{
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				if(tblFormSchema.getFieldType().equalsIgnoreCase("int")){
+					htmlStringBuilder.append(htmlElements.get(8).getElementName()
+							.replace(":id", tblFormSchema.getFieldName())
+							.replace(":name", tblFormSchema.getFieldName())
+							.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+							.replace(":step","1")
+							+ " data-rule=\"required|"+jsValidationList.get(0)+"\" />");
+				}else{
+					htmlStringBuilder.append(htmlElements.get(8).getElementName()
+							.replace(":id", tblFormSchema.getFieldName())
+							.replace(":name", tblFormSchema.getFieldName())
+							.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+							.replace(":step","0.01")
+							+ " data-rule=\"required|"+jsValidationList.get(0)+"\" />");
+				}
+				customJsRules += jsValidationList.get(1);
+				customJsMessages += jsValidationList.get(2);
+			}
+			else if(tblFormSchema.getFieldController().equals("textarea"))
+			{
+				/*htmlStringBuilder.append("<td><textarea name=\"textarea"+(i+""+counter)+"\" id=\"textarea"+(i+""+counter)+"\" placeholder=\"Enter text...\" rows=\"5\" cols=\"30\"></textarea></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(1).getElementName().replace("?", tblFormSchema.getFieldName()) +" />");
+				htmlStringBuilder.append(htmlElements.get(1).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":maxlength", tblFormSchema.getSize()+"") 
+						+ " data-rule=\"required|"+jsValidationList.get(0)+"\" ></textarea>");
+				customJsRules += jsValidationList.get(1);
+				customJsMessages += jsValidationList.get(2);
+			}
+			else if(tblFormSchema.getFieldController().equals("radio"))
+			{
+				int idCnt = 1;
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				System.out.println("--- " + Arrays.toString(fldValSplit));
+				htmlStringBuilder.append(" <div class='row'>");
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					System.out.println("'"+fldValSplit[j].trim()+"'");
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						htmlStringBuilder.append(" <div class='col-sm-6'>");
+						//htmlStringBuilder.append(htmlElements.get(2).getElementName().replace("?", tblFormSchema.getFieldName()) + " value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append(htmlElements.get(2).getElementName()
+								.replace(":id", tblFormSchema.getFieldName())
+								.replace(":name", tblFormSchema.getFieldName())
+								.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex())) 
+								+ " value="+fldValSplit[j].trim()+""
+								+ " data-rule=\"required\" />" + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append("</div>");
+					}
+				}
+				htmlStringBuilder.append("</div>");
+			}
+			else if(tblFormSchema.getFieldController().equals("checkBox"))
+			{
+				int idCnt = 1;
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				htmlStringBuilder.append(" <div class='row'>");
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						//htmlStringBuilder.append(htmlElements.get(3).getElementName().replace("?", tblFormSchema.getFieldName()) + " value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append(" <div class='col-sm-6'>");
+						htmlStringBuilder.append(htmlElements.get(3).getElementName()
+								.replace(":id", tblFormSchema.getFieldName()+ (idCnt++))
+								.replace(":name", tblFormSchema.getFieldName())
+								.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex())) + 
+								" value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append("</div>");
+					}
+				}
+				htmlStringBuilder.append("</div>");
+				
+				scriptCheckFormData += "if(!$('input[name="+tblFormSchema.getFieldName()+"]:checked').length > 0) {" +
+						"document.getElementById(\"errMessage\").innerHTML = \""+tblFormSchema.getFieldLabel()+" can not be null\";" +
+						"return false;" +
+						"}";
+				
+			}
+			else if(tblFormSchema.getFieldController().equals("comboBox"))
+			{
+				htmlStringBuilder.append(htmlElements.get(4).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex())) + " />");
+				
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						htmlStringBuilder.append("<option value='"+fldValSplit[j].trim()+"'>"+fldValSplit[j].trim()+"</option>");
+					}
+				}
+				htmlStringBuilder.append("</select>");
+			}
+			else if(tblFormSchema.getFieldController().equalsIgnoreCase("date") && tblFormSchema.getFieldType().equalsIgnoreCase("DATE")){
+				htmlStringBuilder.append(htmlElements.get(7).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						+ " data-rule=\"required\" />");
+				
+				scriptHTML += "$('#"+tblFormSchema.getFieldName()+"').datetimepicker({" +
+						"timepicker:false,";
+				if(tblFormSchema.getDatePast().equals("true"))
+				{
+					scriptHTML += "maxDate:'+1970/01/01'," ;
+				}
+				if(tblFormSchema.getDateFuture().equals("true"))
+				{
+					scriptHTML += "minDate:'-1970/01/01'," ;
+				}
+				if(!tblFormSchema.getStartDate().equals(""))
+				{
+					try {
+						scriptHTML += "defaultDate:'" + commonUtility.convertDateInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getStartDate()) + "'," +
+								"minDate:'" + commonUtility.convertDateInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getStartDate()) + "'," +
+								"maxDate:'" + commonUtility.convertDateInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getEndDate()) + "'," ;
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				if(tblFormSchema.getDateFormat().equals(""))
+				{
+					scriptHTML += "format: 'Y-m-d',";
+					scriptHTML += "formatDate : 'Y-m-d',";
+				}
+				else
+				{
+					scriptHTML += "format: '" + tblFormSchema.getDateFormat().replaceAll("H:i", "").trim() +"',";
+					scriptHTML += "formatDate : '" + tblFormSchema.getDateFormat().replaceAll("H:i", "").trim() +"',";
+				}
+				
+				scriptHTML += "});";
+			}
+			else if(tblFormSchema.getFieldController().equals("date") && tblFormSchema.getFieldType().equals("DATETIME")){
+				htmlStringBuilder.append(htmlElements.get(7).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						+ " data-rule=\"required\" />");
+				
+				scriptHTML += "$('#"+tblFormSchema.getFieldName()+"').datetimepicker({";
+				if(tblFormSchema.getDatePast().equals("true"))
+				{
+					scriptHTML += "maxDate:'+1970/01/01'," ;
+				}
+				if(tblFormSchema.getDateFuture().equals("true"))
+				{
+					scriptHTML += "minDate:'-1970/01/01'," ;
+				}
+				if(!tblFormSchema.getStartDate().equals(""))
+				{
+					try {
+						scriptHTML += "defaultDate:'" + commonUtility.convertDateTimeInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getStartDate()) + "'," +
+								"minDate:'" + commonUtility.convertDateTimeInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getStartDate()) + "'," +
+								"maxDate:'" + commonUtility.convertDateTimeInDiffFormat(tblFormSchema.getDateFormat(), tblFormSchema.getEndDate()) + "'," ;
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				if(tblFormSchema.getDateFormat().equals("")) {
+					scriptHTML += "format: 'Y-m-d H:i',";
+					scriptHTML += "formatDate: 'Y-m-d H:i',";
+				} else {
+					scriptHTML += "format: '" + tblFormSchema.getDateFormat() +"',";
+					scriptHTML += "formatDate: '" + tblFormSchema.getDateFormat() +"',";
+				}
+				scriptHTML += "step : 1,";
+				scriptHTML += "});";
+			}
+			else if(tblFormSchema.getFieldController().equals("alert"))
+			{
+				String functionArgu = new String() ; 
+				for(String data : tblFormSchema.getFieldValue().split(",")){
+					functionArgu += ",'TYPE."+ data.trim().toLowerCase() +"','"+data.trim()+"'" ;
+				}
+				alertString.append("&nbsp <button class='btn btn-default' data-toggle='modal' data-target='#myModal' tabindex="+tblFormSchema.getFieldIndex()+" onclick=\"alertFuntion('"+tblFormSchema.getFieldLabel()+"','"+tblFormSchema.getFieldName().replace("_", " ")+"'"+functionArgu+") \">"+tblFormSchema.getFieldLabel()+"</button>");
+			}
+			else if(tblFormSchema.getFieldController().equals("hyperlink"))
+			{
+				htmlStringBuilder.append("<a href='"+tblFormSchema.getFieldName()+"' tabindex="+tblFormSchema.getFieldIndex()+" >"+ tblFormSchema.getFieldLabel() +"</a>");
+			}
+			
+			if(!tblFormSchema.getFieldController().equals("alert")) {
+				htmlStringBuilder.append("</div>");
+				htmlStringBuilder.append("</div>");
+			}
+		}
+		scriptCheckFormData += "document.getElementById(\"errMessage\").innerHTML = \"\"; return true; }); });";
+		htmlStringBuilder.append("<div class=\"form-group\">");
+		htmlStringBuilder.append("<div class=\"col-sm-offset-4 col-sm-5\">");
+		htmlStringBuilder.append("<input type=\"submit\" class=\"btn btn-success\" id=\"submit"+pageName+"\" value=\"Submit\" />");
+		htmlStringBuilder.append(alertString);
+		htmlStringBuilder.append("</div>");
+		htmlStringBuilder.append("</div>");
+		htmlStringBuilder.append("</form>"
+				+ "<font color='red'><p id=\"errMessage\"></p></font>"
+				+ "<c:if test=\"${not empty message}\">"
+				+ "<font color='green'><c:out value=\"${message }\"></c:out></font>"
+				+"</c:if>");
+		htmlStringBuilder.append("<c:if test=\"${not empty errMessage}\">"
+				+ "<font color='red'> ${errMessage } </font>"
+				+"</c:if>");
+		htmlStringBuilder.append("</div>"
+				+ "<div class=\"container\" style=\"overflow-x:auto;\">"
+				+ "<c:if test=\"${not empty listData}\" >"
+				+ "	<table class=\"table\"> 	<thead style='color:#ccffe6;background-color:#87ceeb'>		<tr>"
+				+ ""+listHeader.toString()
+				+ "	</tr></thead>"
+				+ "	<c:forEach items=\"${listData}\" var=\"obj\">"
+				+ "	<tbody><tr>"
+				+ ""+listField.toString()
+				+ "	</tr></tbody>"
+				+ "	</c:forEach>"
+				+"</table>"
+				+"</c:if>");
+		if(htmlStringBuilder.toString().contains("#myModal")){
+			htmlStringBuilder.append("<jsp:include page='alertForm.jsp'></jsp:include>");
+		}
+		htmlStringBuilder.append("</div>");
+		htmlStringBuilder.append("</body>");
+		htmlStringBuilder.append("<script src=\"../js/formutility_date.js\"></script>");
+		htmlStringBuilder.append("<script>");
+		htmlStringBuilder.append(scriptCheckFormData);
+		htmlStringBuilder.append("</script>");
+		htmlStringBuilder.append("<script>");
+		htmlStringBuilder.append("new Validator(document.querySelector('#id"+pageName+"'), function (err, res) {" +
+			"return res;" +
+			"},"+customJsRules+customJsMessages+"}}});");
+		htmlStringBuilder.append("</script>");
+		htmlStringBuilder.append("<script>");
+		htmlStringBuilder.append(scriptHTML);
+		htmlStringBuilder.append("</script>");
+		htmlStringBuilder.append("</html>");
+		
+		try
+		{
+			commonUtility.createFile(compileLocation + pageName, htmlStringBuilder.toString(), "jsp");
+			commonUtility.createFile(commonUtility.getValueFromPropertieFile("jspFileLocation") + pageName, htmlStringBuilder.toString(), "jsp");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		System.out.println("form code : " + htmlStringBuilder.toString());
+	}
+
+	@Override
+	public int insertPageMappingData(PageMapping pageMapping) {
+		// TODO Auto-generated method stub	
+		try
+		{
+			return hibernateOperation.insertDataAndReturnId(pageMapping);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	/*Change by Bhadresh Bajariya on 29-12-2017
+	 * Change method configuration because i have not need to call every time get listed data from DataBase so. 
+	 * and also add this in classgeneration method for add regex validations.*/
+	@Override
+	public Map< String, TblFormSchema>  insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl, String[] fld_name, String[] fld_size, String[] fld_val,String[] fld_index, 
+			String[] regex, String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date, String[] date_format, int pageMappingId) {
+		// TODO Auto-generated method stub
+		Map< String, TblFormSchema> tableFormSchemaMap = new HashMap<>();
+		System.out.println("fld ctrl.length " + fld_ctrl.length);
+		
+		for(int i=0;i<fld_ctrl.length;i++)
+		{
+			TblFormSchema tblFormSchema = new TblFormSchema();
+			tblFormSchema.setFk(pageMappingId);
+			tblFormSchema.setFieldController(fld_ctrl[i]);
+			tblFormSchema.setFieldLabel(fld_lbl[i]);
+			tblFormSchema.setFieldName(fld_name[i] );
+			tblFormSchema.setFieldType(fld_type[i]);
+			tblFormSchema.setRegex(regex[i]);
+			tblFormSchema.setFieldIndex(Integer.parseInt( fld_index[i]));
+			tblFormSchema.setStartDate(start_date[i]);
+			tblFormSchema.setEndDate(end_date[i]);
+			tblFormSchema.setDateFormat(date_format[i]);
+			tblFormSchema.setDateAll(date_all[i]);
+			tblFormSchema.setDatePast(date_past[i]);
+			tblFormSchema.setDateFuture(date_future[i]);
+			
+			if(fld_ctrl[i].equals("radio") ||  fld_ctrl[i].equals("comboBox"))
+			{
+				String fldValSplit[] = fld_val[i].split(",");
+				int maxVal = fldValSplit[0].length();
+				for(int j=1;j<fldValSplit.length;j++)
+				{
+					if(fldValSplit[j].trim().length() > maxVal)
+					{
+						maxVal = fldValSplit[j].trim().length();
+					}
+				}
+				tblFormSchema.setSize(maxVal+"");
+			}
+			else if (fld_ctrl[i].equals("checkBox")) {
+				tblFormSchema.setSize(fld_val[i].length()+"");
+			}
+			else if(fld_ctrl[i].equals("date") ){
+				tblFormSchema.setSize("0");
+			}
+			else if(fld_ctrl[i].equals("alert") ){
+				tblFormSchema.setSize("0");
+				tblFormSchema.setFieldValue(fld_val[i]);
+			}
+			
+			else
+			{
+				tblFormSchema.setSize(fld_size[i]);
+			}
+			
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("checkBox") || fld_ctrl[i].equals("comboBox"))
+			{
+				tblFormSchema.setFieldValue(fld_val[i]);
+			}
+			tableFormSchemaMap.put(tblFormSchema.getFieldName().toLowerCase(), tblFormSchema);
+			hibernateOperation.insertData(tblFormSchema);
+		}
+		tableFormSchemaMap.put("id",null);
+		return tableFormSchemaMap;
+	}
+
+	@Override
+	public boolean createTable(String pageName, String[] fld_ctrl, String[] fld_name, String[] fld_type,
+			String[] fld_size, String[] fld_val) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		//int cntRad = 0;
+		
+		String query = "CREATE TABLE "+pageName+" ( "
+				+ " ID INT PRIMARY KEY AUTO_INCREMENT, ";
+		
+		for(int i=0;i<fld_name.length;i++)
+		{
+			System.out.println("Controller " + fld_ctrl[i]);
+			if(fld_ctrl[i].equals("alert") || fld_ctrl[i].equals("hyperlink")){
+				if( i == fld_name.length-1)
+				{
+					query = query.substring(0,query.length()-3);
+					//query += ", ";
+				}
+				
+				continue;
+			}
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("comboBox"))
+			{
+				String fldValSplit[] = fld_val[i].split(",");
+				int maxVal = fldValSplit[0].trim().length();
+				for(int j=1;j<fldValSplit.length;j++)
+				{
+					if(fldValSplit[j].trim().length() > maxVal)
+					{
+						maxVal = fldValSplit[j].trim().length();
+					}
+				}
+				query += " "+fld_name[i].toLowerCase() +" "+fld_type[i]+"("+maxVal+") ";
+			}
+			else if(fld_ctrl[i].equals("checkBox"))
+			{
+				query += " "+fld_name[i].toLowerCase() +" "+fld_type[i]+"("+fld_val[i].length()+") ";
+			}else if( fld_ctrl[i].equals("date") || (fld_ctrl[i].equals("textbox") && fld_type[i].equals("DATE"))){
+				query += " "+fld_name[i].toLowerCase()+" "+fld_type[i]+" ";
+			}
+			else
+			{ 
+				if( Arrays.stream(new String[]{ "FLOAT","DOUBLE","NUMERIC"}).parallel().anyMatch(fld_type[i]::contains)){
+					if(fld_size[i].contains(",")){
+						query += " "+fld_name[i].toLowerCase() +" "+fld_type[i]+"("+fld_size[i]+") ";
+					}else{
+						query += " "+fld_name[i].toLowerCase() +" "+fld_type[i]+" ";
+					}
+				}else{
+					query += " "+fld_name[i].toLowerCase() +" "+fld_type[i]+"("+fld_size[i]+") ";
+				}
+				
+			}
+			if(i < fld_name.length-1)
+			{
+				query += ", ";
+			}
+		}
+		query += ")";
+		System.out.println("query : " + query);
+		return operation.createTable(query);
+		
+	}
+	
+	@Override
+	public PageMapping getPageMappingData(String pageMappingID) {
+		// TODO Auto-generated method stub
+		return (PageMapping) hibernateOperation.getDataById(PageMapping.class,Integer.parseInt( pageMappingID));
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,
+			String[] fld_ctrl, String[] fld_val) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		System.out.println("In create table");
+
+		String query = "Alter TABLE " + pageName + "  " + "  ";
+
+		query += updateTableQuery(pageName, fld_name, fld_type, fld_size, fld_ctrl, fld_val);
+		query += "";
+		System.out.println("query : " + query);
+		
+		return operation.createTable(query);
+	}
+	
+	
+	public String updateTableQuery(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,
+			String[] fld_ctrl, String[] fld_val) {
+		Connection connection = null;
+		ResultSet resultSet = null;
+		StringBuilder alterQuery = new StringBuilder();
+		System.out.println("fld name" + fld_name.length);
+		System.out.println("fld_type" + fld_type.length);
+		System.out.println("fld_size" + fld_size.length);
+		System.out.println("fld_ctrl" + Arrays.toString(fld_ctrl));
+		try {
+			connection = jdbcUtil.getConnection();
+			DatabaseMetaData dbmd;
+			dbmd = connection.getMetaData();
+			String[] types = { "TABLE" };
+			resultSet = dbmd.getColumns(null, null, pageName, "%");
+			List<String> existingField = new LinkedList<>();
+			// Map<String, String> formField = new HashMap<>();
+			//int cntRad = 0;
+			while (resultSet.next()) {
+				existingField.add(resultSet.getString(4));
+			}
+
+			for (int i = 0; i < fld_name.length; i++) {
+				if (fld_ctrl[i].equals("alert") || fld_ctrl[i].equals("hyperlink")){
+					continue;
+				}
+				
+				if (fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("comboBox")) {
+					String fldValSplit[] = fld_val[i].split(",");
+					int maxVal = fldValSplit[0].trim().length();
+
+					for (int j = 1; j < fldValSplit.length; j++) {
+						if (fldValSplit[j].trim().length() > maxVal) {
+							maxVal = fldValSplit[j].trim().length();
+						}
+					}
+					
+					System.out.println("Field Value" + fld_val[i] + "Max val is " + maxVal);
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(
+								" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + maxVal + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery
+								.append(" add " + fld_name[i].toLowerCase()  + " " + fld_type[i] + "(" + maxVal + ") ");
+					}
+				} else if (fld_ctrl[i].equals("checkBox")) {
+					System.out.println("Check Box " + fld_val[i].length());
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(" modify " + fld_name[i].toLowerCase()  + " " + fld_type[i] + "("
+								+ fld_val[i].length() + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery.append(" add " + fld_name[i].toLowerCase()  + " " + fld_type[i] + "("
+								+ fld_val[i].length() + ") ");
+					}
+				}else if(fld_ctrl[i].equalsIgnoreCase("date") || (fld_ctrl[i].equals("textbox") && fld_type[i].equals("DATE"))) {
+
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(
+								" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + " ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery.append(
+								" add " + fld_name[i].toLowerCase()  + " " + fld_type[i] + " ");
+					}
+
+				} else {
+
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(
+								" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + fld_size[i] + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery.append(
+								" add " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + fld_size[i] + ") ");
+					}
+
+				}
+				alterQuery.append(", \n");
+
+			}
+			for (String remainField : existingField) {
+				if (!remainField.equalsIgnoreCase("id")) {
+					alterQuery.append(" drop " + remainField + " ");
+					alterQuery.append(", \n");
+				}
+
+			}
+
+		} catch (SQLException e) {
+
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				resultSet.close();
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+			}
+		}
+		return alterQuery.toString().substring(0, alterQuery.toString().length() - 3);
+	}
+
+	@Override
+	public long deletePageTableFields(int pageId) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.deleteData("TblFormSchema", " fk = "+pageId);
+	}
+	
+	@Override
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation) {
+		// TODO Auto-generated method stub
+		List<String> queries = new ArrayList<String>();
+		queries.add("DELETE FROM page_mapping WHERE id="+pageMappingId);
+		queries.add("DELETE FROM tbl_form_schema WHERE fk="+pageMappingId);
+		queries.add("DROP TABLE "+pageMappingName);
+		
+		boolean status = false;
+		
+		try
+		{
+			status = hibernateOperation.batchProcessing(queries);
+			if(commonUtility.deleteFile(commonUtility.getValueFromPropertieFile("jspFileLocation") + pageMappingName + ".jsp"))
+			{
+				if(commonUtility.deleteFile(compileLocation + pageMappingName + ".jsp"))
+				{
+					if(commonUtility.deleteFile(commonUtility.getValueFromPropertieFile("javaFileLocation") + pageMappingName + ".java"))
+					{
+						return commonUtility.deleteFile(compileLocation + "WEB-INF\\classes\\"+commonUtility.getValueFromPropertieFile("javaFileLocation")+pageMappingName.substring(0, 1).toUpperCase() + pageMappingName.substring(1) + ".java");
+					}
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	@Override
+	public List<PageMapping> getPageMappingData() {
+		// TODO Auto-generated method stub
+		return hibernateOperation.listDataWithOrderBy("PageMapping", "id");
+	}
+
+	@Override
+	public List<TblFormSchema> getListTableFormSchema(String pageMappingId) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.listDataWithWhreClause("TblFormSchema", "fk = " + Integer.parseInt(pageMappingId));
+	}
+
+	@Override
+	public String generateHTMLFormTableString(List<TblFormSchema> listFormSchemas,List<RegexPattern> listRegexPatterns) {
+		// TODO Auto-generated method stub
+		StringBuilder htmlText= new StringBuilder();
+		int counter = 1;
+		for(TblFormSchema tblFormSchemaObject : listFormSchemas){
+			System.out.println("Controller " + tblFormSchemaObject.getFieldController());
+			htmlText.append("<tr id='tbl_tr"+counter+"'>"+
+					
+					commonUtility.getTDTegFromControlType(tblFormSchemaObject.getFieldController(),counter) +
+					commonUtility.getTDTegFromDataType(tblFormSchemaObject.getFieldType(),tblFormSchemaObject.getFieldController()) 
+					
+					+ "<td><input type='text' class='form-control' data-rule='required|fieldLabel' name='fld_lbl' id='fld_lbl"+counter+"' value='"+tblFormSchemaObject.getFieldLabel()+"'  /></td>" );
+					if(tblFormSchemaObject.getFieldValue() == null && (!tblFormSchemaObject.getFieldController().equals("hyperlink"))   ){
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldName' name='fld_name' id='fld_name"+counter+"' value='"+tblFormSchemaObject.getFieldName()+"'  /></td>" );
+						if(tblFormSchemaObject.getFieldController().equals("date")) {
+							htmlText.append("<td><input type='text' class='form-control' name='fld_size' id='fld_size"+counter+"' readonly value='"+tblFormSchemaObject.getSize()+"' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+							htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"DateModule")+"</select></td>");
+							htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+							htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+									"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+						} else if(tblFormSchemaObject.getFieldController().equals("textarea")) {
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldSize|between-1-400' name='fld_size' id='fld_size"+counter+"' value='"+tblFormSchemaObject.getSize()+"' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+							htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"TextModule")+"</select></td>");
+							htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+							htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+									"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+						} else if(tblFormSchemaObject.getFieldController().equals("textbox")){
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldSize|between-1-250' name='fld_size' id='fld_size"+counter+"'  value='"+tblFormSchemaObject.getSize()+"'  /></td>");
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+							htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"TextModule")+"</select></td>");
+							htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+							htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+									"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+						}
+						else if(tblFormSchemaObject.getFieldController().equals("password")){
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldSize|between-1-250' name='fld_size' id='fld_size"+counter+"'  value='"+tblFormSchemaObject.getSize()+"'  /></td>");
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+							htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"PasswordModule")+"</select></td>");
+							htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+							htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+									"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+						}
+						else if(tblFormSchemaObject.getFieldController().equals("number")){
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldSize|between-1-250' name='fld_size' id='fld_size"+counter+"'  value='"+tblFormSchemaObject.getSize()+"'  /></td>");
+							htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+							htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"NumberModule")+"</select></td>");
+							htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+							htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+									"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+							htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+						}
+						
+					}else if(tblFormSchemaObject.getFieldController().equals("alert")){
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_name' id='fld_name"+counter+"' rel='tooltip' data-toggle='tooltip' title='Alert Discription'   />"+tblFormSchemaObject.getFieldName()+"</textarea>");
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' rel='tooltip' data-toggle='tooltip' title='Enter comma separated values here!'   >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'   value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td><select class='form-control' name='regex' id='regex'><option value='No validation' selected>No validation</option</select></td>");
+						htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><input type='hidden' class='form-control' name='fld_size' id='fld_size"+counter+"'></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+								"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+					}else if(tblFormSchemaObject.getFieldController().equals("hyperlink")){
+						System.out.println("in hyperlink");
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_name' id='fld_name"+counter+"' rel='tooltip' data-toggle='tooltip' title='Hyperlink URL'   >" +tblFormSchemaObject.getFieldName().replace("_", " ")+"</textarea></td>" );
+						htmlText.append("<td><input type='text' class='form-control' name='fld_size' id='fld_size"+counter+"' readonly='true' value='"+tblFormSchemaObject.getSize()+"' ></td>");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'   value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td><select class='form-control' name='regex' id='regex'><option value='No validation' selected>No validation</option</select></td>");
+						htmlText.append("<td><input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...' style='display: none;' ></textarea></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+								"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+					}
+					else if(tblFormSchemaObject.getFieldController().equals("checkBox") || tblFormSchemaObject.getFieldController().equals("radio")){
+						System.out.println("in CheckBox");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldName' name='fld_name' id='fld_name"+counter+"' value='"+tblFormSchemaObject.getFieldName()+"'  /></td>" );
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...'   >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'   value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"RadioModule")+"</select></td>");
+						htmlText.append("<td> <input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><input type='hidden' name='fld_size' id='fld_size"+counter+"'></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+								"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+					}
+					else if(tblFormSchemaObject.getFieldController().equals("comboBox") ){
+						System.out.println("in Select");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldName' name='fld_name' id='fld_name"+counter+"' value='"+tblFormSchemaObject.getFieldName()+"'  /></td>" );
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_val' id='fld_val"+counter+"' placeholder='Enter values...'   >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'   value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' data-rule='regex' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternDataForModule(listRegexPatterns, tblFormSchemaObject.getRegex(),"SelectModule")+"</select></td>");
+						htmlText.append("<td> <input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><input type='hidden' name='fld_size' id='fld_size"+counter+"'></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+								"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+					}/*else{
+						System.out.println("in Else");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|fieldName' name='fld_name' id='fld_name"+counter+"' value='"+tblFormSchemaObject.getFieldName()+"'  /></td>" );
+						htmlText.append("<td><textarea rows='2' cols='22' class='form-control txt_area_val' data-rule='required|minlength-5' name='fld_val' id='fld_val"+counter+"' rel='tooltip' data-toggle='tooltip' title='Enter comma separated values here!' placeholder='Enter values...'   >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+						htmlText.append("<td><input type='text' class='form-control' data-rule='required|digitOnly|between-1-100' name='fld_index' id='fld_index"+counter+"' size='1' min='1' max='100'   value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td><select class='form-control' name='regex' id='regex"+counter+"' onChange='onRegexChange(\"regex"+counter+"\")'>"+commonUtility.getSelectedHTMLRegexPatternData(listRegexPatterns, tblFormSchemaObject.getRegex())+"</select></td>");
+						htmlText.append("<td> <input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><input type='hidden' name='fld_size' id='fld_size"+counter+"'></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_all' id='date_all"+counter+"' value='"+tblFormSchemaObject.getDateAll()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_past' id='date_past"+counter+"' value='"+tblFormSchemaObject.getDatePast()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_future' id='date_future"+counter+"' value='"+tblFormSchemaObject.getDateFuture()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='start_date' id='start_date_id"+counter+"' value='"+tblFormSchemaObject.getStartDate()+"' style='display: none;' />" +
+								"<input type='text' class='form-control' name='end_date' id='end_date_id"+counter+"' value='"+tblFormSchemaObject.getEndDate()+"' style='display: none;' /></td>");
+						htmlText.append("<td><input type='text' class='form-control' name='date_format' id='date_format"+counter+"' value='"+tblFormSchemaObject.getDateFormat()+"' style='display: none;' /></td>");
+					}*/
+					//htmlText.append("<td><input type='button' id='dropBtn' onClick='removeTableRow(\"tbl_tr"+counter+"\")' value='Drop'></td>");
+					
+				
+					htmlText.append( "</tr>");
+					++counter; 
+		}
+
+		return htmlText.toString();
+	}
+
+	@Override
+	public List getListDataFromModelName(String modelName) {
+		// TODO Auto-generated method stub
+		System.out.println("modelName : " + modelName);
+		Class<?> cls = commonUtility.getClassTypeFromName(modelName);
+		return hibernateOperation.listData(modelName,cls);
+	}
+
+	@Override
+	 public boolean isPageExist(String pageName) {
+	  // TODO Auto-generated method stub
+	  if(hibernateOperation.countTotalData("PageMapping", "page_name='"+pageName+"'") != 0)
+	  {
+	   return true;
+	  }
+	  return false;
+	 }
+
+	@Override
+	public String getHTMLRegexPatternData(List<RegexPattern> listRegexPatterns) {	
+		return commonUtility.createHTMLRegexPatternData(listRegexPatterns);
+	}
+
+	@Override
+	public List<RegexPattern> getListRegEx(String[] regex) {
+		// TODO Auto-generated method stub
+		if(regex ==null ){
+			return hibernateOperation.listData("RegexPattern");
+		}else{
+			return hibernateOperation.listDataWithWhreClause("RegexPattern", " id in("+Arrays.toString(regex).replace("[", "").replace("]",	 "")+")");	
+		}
+		
+	}
+
+	@Override
+	public boolean insertObjectIntoDB(Object regexObj) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.insertData(regexObj);
+	}
+
+	@Override
+	public Map<String, TblFormSchema> setTableFormSchemaInMap(String[] fld_ctrl, String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[] fld_val, String[] fld_index, String[] regex,
+			String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date,
+			String[] date_format, int pageMappingId) {
+		// TODO Auto-generated method stub
+		Map< String, TblFormSchema> tableFormSchemaMap = new HashMap<>();
+		System.out.println("fld ctrl.length " + fld_ctrl.length);
+		
+		for(int i=0;i<fld_ctrl.length;i++)
+		{
+			TblFormSchema tblFormSchema = new TblFormSchema();
+			tblFormSchema.setFk(pageMappingId);
+			tblFormSchema.setFieldController(fld_ctrl[i]);
+			tblFormSchema.setFieldLabel(fld_lbl[i].trim());
+			tblFormSchema.setFieldName(fld_name[i].trim().toLowerCase() );
+			tblFormSchema.setFieldType(fld_type[i]);
+			tblFormSchema.setRegex(regex[i]);
+			tblFormSchema.setFieldIndex(Integer.parseInt( fld_index[i]));
+			tblFormSchema.setStartDate(start_date[i]);
+			tblFormSchema.setEndDate(end_date[i]);
+			tblFormSchema.setDateFormat(date_format[i]);
+			tblFormSchema.setDateAll(date_all[i]);
+			tblFormSchema.setDatePast(date_past[i]);
+			tblFormSchema.setDateFuture(date_future[i]);
+			
+			if(fld_ctrl[i].equals("radio") ||  fld_ctrl[i].equals("comboBox"))
+			{
+				String fldValSplit[] = fld_val[i].split(",");
+				int maxVal = fldValSplit[0].length();
+				for(int j=1;j<fldValSplit.length;j++)
+				{
+					if(fldValSplit[j].trim().length() > maxVal)
+					{
+						maxVal = fldValSplit[j].trim().length();
+					}
+				}
+				tblFormSchema.setSize(maxVal+"");
+			}
+			else if (fld_ctrl[i].equals("checkBox")) {
+				tblFormSchema.setSize(fld_val[i].length()+"");
+			}
+			else if(fld_ctrl[i].equals("date") ){
+				tblFormSchema.setSize("0");
+			}
+			else if(fld_ctrl[i].equals("alert") ){
+				tblFormSchema.setSize("0");
+				tblFormSchema.setFieldValue(fld_val[i].trim());
+			}
+			
+			else
+			{
+				tblFormSchema.setSize(fld_size[i].trim());
+			}
+			
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("checkBox") || fld_ctrl[i].equals("comboBox"))
+			{
+				tblFormSchema.setFieldValue(fld_val[i].trim());
+			}
+			tableFormSchemaMap.put(tblFormSchema.getFieldName().toLowerCase(), tblFormSchema);
+			//hibernateOperation.insertData(tblFormSchema);
+		}
+		tableFormSchemaMap.put("id",null);
+		return tableFormSchemaMap;
+	}
+
+	@Override
+	public HashMap<String, String> validateFormGenerationData(PageMapping pageMapping,
+			Map<String, TblFormSchema> tableFormSchemaMapList) {
+		// TODO Auto-generated method stub
+		HashMap<String,String> errorList =  new HashMap<>();
+		
+		for(Entry<String, TblFormSchema> tblFormSchemaEntry : tableFormSchemaMapList.entrySet() ){
+			System.out.println("table schema value : "+tblFormSchemaEntry.getValue());
+			if(tblFormSchemaEntry.getValue() != null){
+				TblFormSchema tblFormSchema = tblFormSchemaEntry.getValue();
+				if(tblFormSchema.getFieldController().equals("alert") || tblFormSchema.getFieldController().equals("hyperlink")){
+					System.out.println("continue");
+					continue;
+				}
+				HashMap<String, String> errorListOfOneObject = commonUtility.hibernateValidation(TblFormSchema.class, tblFormSchema);
+				if(errorListOfOneObject != null){
+					errorList.putAll( errorListOfOneObject);	
+				}
+			}
+		}
+		
+		HashMap<String, String> errorListOfOneObject = commonUtility.hibernateValidation(PageMapping.class,pageMapping);
+		if(errorListOfOneObject != null){
+			errorList.putAll( errorListOfOneObject);	
+		}
+		
+		for(Entry<String, String> error : errorList.entrySet() ){
+			//errorList.putAll( commonUtility.hibernateValidation(TblFormSchema.class, tblFormSchema.getValue()));
+			System.out.println("Error : "+ error.getValue());
+		}
+		return errorList;
+	}
+
+	@Override
+	public boolean insertFieldData(Map<String, TblFormSchema> tableFormSchemaMapList, int pageMappingId) {
+		// TODO Auto-generated method stub
+		boolean result = true;
+		for(Entry<String, TblFormSchema> tableFormSchema : tableFormSchemaMapList.entrySet() ){
+			//errorList.putAll( commonUtility.hibernateValidation(TblFormSchema.class, tblFormSchema.getValue()));
+			if(tableFormSchema.getValue() != null){
+				TblFormSchema tblFormSchema = tableFormSchema.getValue();
+				tblFormSchema.setFk(pageMappingId);
+				result &= hibernateOperation.insertData(tblFormSchema) == true ;	
+			}
+			
+		}
+		return result;
+	}
+
+	@Override
+	public boolean createTable(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		//int cntRad = 0;
+		tableFormSchemaMapList.remove("id");
+		String query = "CREATE TABLE "+pageName+" ( "
+				+ " ID INT PRIMARY KEY AUTO_INCREMENT, ";
+		int index = 1;
+		for (Entry<String, TblFormSchema> tableFormSchema : tableFormSchemaMapList.entrySet()) {
+			if (tableFormSchema.getValue() != null) {
+				TblFormSchema tblFormSchema = tableFormSchema.getValue();
+				System.out.println("Controller " + tblFormSchema.getFieldController());
+				if (tblFormSchema.getFieldController().equals("alert")
+						|| tblFormSchema.getFieldController().equals("hyperlink")) {
+					System.out.println("In fields index->" +index + " -> size " +tableFormSchemaMapList.size()  );
+					/*if ( index == tableFormSchemaMapList.size()) {
+						query = query.substring(0, query.length() - 3);
+						// query += ", ";
+					}*/
+
+					continue;
+				}
+				if (tblFormSchema.getFieldController().equals("radio")
+						|| tblFormSchema.getFieldController().equals("comboBox")) {
+					String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+					int maxVal = fldValSplit[0].trim().length();
+					for (int j = 1; j < fldValSplit.length; j++) {
+						if (fldValSplit[j].trim().length() > maxVal) {
+							maxVal = fldValSplit[j].trim().length();
+						}
+					}
+					query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "(" + maxVal
+							+ ") ";
+				} else if (tblFormSchema.getFieldController().equals("checkBox")) {
+					query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "("
+							+ tblFormSchema.getFieldValue().length() + ") ";
+				} else if (tblFormSchema.getFieldController().equals("date")
+						|| (tblFormSchema.getFieldController().equals("textbox")
+								&& tblFormSchema.getFieldType().equals("DATE"))) {
+					query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + " ";
+				} else {
+					if (Arrays.stream(new String[] { "FLOAT", "DOUBLE", "NUMERIC" }).parallel()
+							.anyMatch(tblFormSchema.getFieldType()::contains)) {
+						if (tblFormSchema.getSize().contains(",")) {
+							query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "("
+									+ tblFormSchema.getSize() + ") ";
+						} else {
+							query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + " ";
+						}
+					} else {
+						query += " " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "("
+								+ tblFormSchema.getSize() + ") ";
+					}
+
+				}
+					query += ", ";
+			}
+			++index ;
+		}
+		query =	query.substring(0, query.toString().length() - 3);
+		query += ")";
+		System.out.println("query : " + query);
+		return operation.createTable(query);
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		System.out.println("In create table");
+
+		String query = "Alter TABLE " + pageName + "  " + "  ";
+
+		query += updateTableQuery(pageName, tableFormSchemaMapList);
+		query += "";
+		System.out.println("query : " + query);
+		
+		return operation.createTable(query);
+	}
+
+	private String updateTableQuery(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList) {
+		// TODO Auto-generated method stub
+		Connection connection = null;
+		ResultSet resultSet = null;
+		StringBuilder alterQuery = new StringBuilder();
+		try {
+			connection = jdbcUtil.getConnection();
+			DatabaseMetaData dbmd;
+			dbmd = connection.getMetaData();
+			String[] types = { "TABLE" };
+			resultSet = dbmd.getColumns(null, null, pageName, "%");
+			List<String> existingField = new LinkedList<>();
+			// Map<String, String> formField = new HashMap<>();
+			//int cntRad = 0;
+			while (resultSet.next()) {
+				existingField.add(resultSet.getString(4));
+			}
+			tableFormSchemaMapList.remove("id");
+			
+			for (Entry<String, TblFormSchema> tableFormSchema : tableFormSchemaMapList.entrySet()) {
+				
+				if (tableFormSchema.getValue() != null) {
+					TblFormSchema tblFormSchema = tableFormSchema.getValue();
+					if (tblFormSchema.getFieldController().equals("alert") || tblFormSchema.getFieldController().equals("hyperlink")){
+						continue;
+					}
+					
+					if (tblFormSchema.getFieldController().equals("radio") || tblFormSchema.getFieldController().equals("comboBox")) {
+						String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+						int maxVal = fldValSplit[0].trim().length();
+
+						for (int j = 1; j < fldValSplit.length; j++) {
+							if (fldValSplit[j].trim().length() > maxVal) {
+								maxVal = fldValSplit[j].trim().length();
+							}
+						}
+						
+						System.out.println("Field Value" + tblFormSchema.getFieldValue()+ "Max val is " + maxVal);
+						if (existingField.contains(tblFormSchema.getFieldName())) {
+							alterQuery.append(
+									" modify " + tblFormSchema.getFieldName()+ " " + tblFormSchema.getFieldType() + "(" + maxVal + ") ");
+							existingField.remove(tblFormSchema.getFieldName());
+						} else {
+							alterQuery
+									.append(" add " + tblFormSchema.getFieldName()  + " " + tblFormSchema.getFieldType() + "(" + maxVal + ") ");
+						}
+					} else if (tblFormSchema.getFieldController().equals("checkBox")) {
+						System.out.println("Check Box " + tblFormSchema.getFieldType().length());
+						if (existingField.contains(tblFormSchema.getFieldName())) {
+							alterQuery.append(" modify " + tblFormSchema.getFieldName()  + " " +tblFormSchema.getFieldType() + "("
+									+ tblFormSchema.getFieldValue().length() + ") ");
+							existingField.remove(tblFormSchema.getFieldName());
+						} else {
+							alterQuery.append(" add " + tblFormSchema.getFieldName()  + " " + tblFormSchema.getFieldType() + "("
+									+ tblFormSchema.getFieldValue().length() + ") ");
+						}
+					}else if(tblFormSchema.getFieldController().equalsIgnoreCase("date") || (tblFormSchema.getFieldController().equals("textbox") && tblFormSchema.getFieldController().equals("DATE"))) {
+
+						if (existingField.contains(tblFormSchema.getFieldName())) {
+							alterQuery.append(
+									" modify " + tblFormSchema.getFieldName() + " " +tblFormSchema.getFieldType() + " ");
+							existingField.remove(tblFormSchema.getFieldName());
+						} else {
+							alterQuery.append(
+									" add " + tblFormSchema.getFieldName()  + " " + tblFormSchema.getFieldType() + " ");
+						}
+
+					} else {
+
+						if (existingField.contains(tblFormSchema.getFieldName())) {
+							alterQuery.append(
+									" modify " +tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "(" + tblFormSchema.getSize() + ") ");
+							existingField.remove(tblFormSchema.getFieldName());
+						} else {
+							alterQuery.append(
+									" add " + tblFormSchema.getFieldName() + " " + tblFormSchema.getFieldType() + "(" + tblFormSchema.getSize() + ") ");
+						}
+
+					}
+					alterQuery.append(", \n");
+				}
+				
+
+			}
+			for (String remainField : existingField) {
+				if (!remainField.equalsIgnoreCase("id")) {
+					alterQuery.append(" drop " + remainField + " ");
+					alterQuery.append(", \n");
+				}
+
+			}
+
+		} catch (SQLException e) {
+
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				resultSet.close();
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+			}
+		}
+		return alterQuery.toString().substring(0, alterQuery.toString().length() - 3);
+	}
+
+	@Override
+	public String getHTMLRegexPatternDataForModule(List<RegexPattern> listRegexPatterns, String moduleName) {
+		// TODO Auto-generated method stub
+		return commonUtility.createHTMLRegexPatternDataForModule(listRegexPatterns,moduleName);
+	}
+
+	@Override
+	public boolean deletePageMappingFromPageName(String pageName) {
+		// TODO Auto-generated method stub
+		
+		/*List<PageMapping> listData = hibernateOperation.listDataWithWhreClause("PageMapping", "pageName="+pageName);
+		if(listData != null && listData.size() != 0 ){
+		  hibernateOperation.de	listData.get(0);
+		}else{
+			
+		}
+		*/
+		
+		if (hibernateOperation.deleteData("PageMapping", "pageName="+pageName) != 0){
+			return true;
+		}else{
+			return false;	
+		}
+	}
+
+	@Override
+	public boolean regenerateTableAndForm(int pageId, String pageName,
+			List<TblFormSchema> listCurrentTblFormSchemaData,String buildPath) {
+		// TODO Auto-generated method stub
+		PageMapping pageMapping = new PageMapping();
+		pageMapping.setPageName(pageName);
+		pageMapping.setId(pageId);
+		int pageMappingId = this.insertPageMappingData(pageMapping);
+		System.out.println("pageMappingId : " + pageMappingId);
+		Map<String, TblFormSchema> tableFormSchemaMapList =  new HashMap<>();
+		for(TblFormSchema tblFormSchema : listCurrentTblFormSchemaData){
+			if(tblFormSchema.getFieldName().equalsIgnoreCase("id")){
+				continue;
+			}
+			tableFormSchemaMapList.put(tblFormSchema.getFieldName(), tblFormSchema);
+		}
+		
+		if (this.insertFieldData(tableFormSchemaMapList, pageMappingId)) {
+
+			if (this.createTable(pageName, tableFormSchemaMapList)) {
+
+				if (this.generateClassFromTable(pageName, buildPath, tableFormSchemaMapList)) {
+					//List<TblFormSchema> list = formUtilityService.getTableFormSchemaData(pageMappingId);
+					this.generateForm(listCurrentTblFormSchemaData, pageName, buildPath);
+					return true;
+				} else {
+					
+						System.out.println("All form data deleted Due to get Exception of class genration");
+					return false;
+				}
+
+			} else {
+					System.out.println("Page Mapping deleted");
+					System.out.println("Page Mapping Field deleted");
+				return false;
+			}
+		}else{
+				System.out.println("Page Mapping deleted");
+			return false;
+		}
+		
+	}
+}

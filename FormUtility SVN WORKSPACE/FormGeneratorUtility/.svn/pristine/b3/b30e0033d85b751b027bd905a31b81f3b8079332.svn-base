@@ -1,0 +1,57 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="employee") 
+public class Employee implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+	return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+	@Column(name="deptname")
+String deptname ; 
+ 
+public String getDeptname() { 
+	return deptname; 
+} 
+public void setDeptname(String deptname) { 
+this.deptname = deptname; 
+} 
+	@Column(name="deptid")
+Integer deptid ; 
+ 
+public Integer getDeptid() { 
+	return deptid; 
+} 
+public void setDeptid(Integer deptid) { 
+this.deptid = deptid; 
+} 
+	@Column(name="test")
+String test ; 
+ 
+public String getTest() { 
+	return test; 
+} 
+public void setTest(String test) { 
+this.test = test; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+deptname+deptid+test); 
+  return "" ; 
+	}
+ }

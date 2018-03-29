@@ -1,0 +1,5 @@
+javaFileLocation=D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\src\\com\\formBean\\
+beanPackage=com.formBean
+beanFilePath=com\\formBean\\
+jspFileLocation=D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\
+libLocation=;D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\WEB-INF\\lib\\javax.persistence-2.1.0.jar;D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\WEB-INF\\lib\\lombok.jar;D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\WEB-INF\\lib\\hibernate-validator-5.2.4.Final.jar;D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\WEB-INF\\lib\\hibernate-commons-annotations-5.0.0.Final.jar;D:\\jars\\com.sttl.hibernate.custom.validation-1.0.jar;D:\\java\\DynamicFormCreation_WorkSpace\\FormGeneratorUtility\\WebContent\\WEB-INF\\lib\\validation-api-1.1.0.Final.jar

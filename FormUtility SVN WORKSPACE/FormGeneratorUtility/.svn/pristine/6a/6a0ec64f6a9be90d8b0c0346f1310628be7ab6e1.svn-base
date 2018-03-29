@@ -1,0 +1,69 @@
+package com.service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+
+public interface FormUtilityService {
+	public void genrateClass();
+
+	public boolean generateClassFromTable(String tableName, String buildPath, Map<String, TblFormSchema> tableFormSchemaMap);
+
+	public boolean insertData(Object dataObject, Class<?> cls);
+	
+	public PageMapping getPageMappingData(String pageMappingId);
+
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,String[] fld_ctrl, String[] fld_val);
+
+	public long deletePageTableFields(int pageId);
+	
+	public List<TblFormSchema> getListTableFormSchema(String pageMappingId);
+
+	public String generateHTMLFormTableString(List<TblFormSchema> listFormSchemas, List<RegexPattern> listRegexPatterns);
+
+	public List getListDataFromModelName(String modelName);
+	
+	//parth code
+	public List<TblFormSchema> getTableFormSchemaData(int fk);
+
+	public void generateForm(List<TblFormSchema> list, String pageName, String compileLocation);
+
+	public int insertPageMappingData(PageMapping pageMapping);
+
+	public Map< String, TblFormSchema> insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl, String[] fld_name, String[] fld_size, String[] fld_val, String[] fld_index, 
+			String[] regex, String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date, String[] date_format, int pageMappingId);
+
+	public boolean createTable(String pageName,String[] fld_ctrl, String[] fld_name, String[] fld_type,
+			String[] fld_size,  String[] fld_val);
+	
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation);
+
+	public List<PageMapping> getPageMappingData();
+	
+	public boolean isPageExist(String pageName);
+
+	public String getHTMLRegexPatternData(List<RegexPattern> listRegexPatterns);
+
+	public List<RegexPattern> getListRegEx(String[] regex);
+
+	public boolean insertObjectIntoDB(Object regexObj);
+
+	public Map<String, TblFormSchema> setTableFormSchemaInMap(String[] fld_ctrl, String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[] fld_val, String[] fld_index, String[] regex,
+			String[] date_all, String[] date_past, String[] date_future, String[] start_date, String[] end_date,
+			String[] date_format, int pageMappingId);
+
+	public HashMap<String, String> validateFormGenerationData(PageMapping pageMapping,
+			Map<String, TblFormSchema> tableFormSchemaMapList);
+
+	public boolean insertFieldData(Map<String, TblFormSchema> tableFormSchemaMapList, int pageMappingId);
+
+	public boolean createTable(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList);
+
+	public boolean updateTableSchema(String pageName, Map<String, TblFormSchema> tableFormSchemaMapList);
+	
+}

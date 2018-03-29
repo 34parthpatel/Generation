@@ -1,0 +1,52 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import org.hibernate.validator.Pattern; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="emp1") 
+public class Emp1 implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+@org.hibernate.validator.Range(min=1,message="ID can not be null")
+ @Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+ return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+@org.hibernate.validator.Range(min=1,message="emp_code can not be null")
+ @Column(name="emp_code")
+Integer emp_code ; 
+ 
+public Integer getEmp_code() { 
+ return emp_code; 
+} 
+public void setEmp_code(Integer emp_code) { 
+this.emp_code = emp_code; 
+} 
+@org.hibernate.validator.Range(min=1,message="emp_name can not be null")
+ @Column(name="emp_name")
+Integer emp_name ; 
+ 
+public Integer getEmp_name() { 
+ return emp_name; 
+} 
+public void setEmp_name(Integer emp_name) { 
+this.emp_name = emp_name; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+emp_code+emp_name); 
+  return "" ; 
+	}
+ }

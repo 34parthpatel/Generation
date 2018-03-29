@@ -1,0 +1,82 @@
+package com.util.hibernate.util;
+
+import java.util.Properties;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.AnnotationConfiguration;
+
+import com.bean.HtmlElement;
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.util.common.CommonUtility;
+
+
+
+public class HibernateUtility {
+	
+private SessionFactory sessionFactory;
+	
+	public SessionFactory getSessionFactory(){
+ 
+	try{
+			Properties  prop = getProperties();
+
+			AnnotationConfiguration configuration = new AnnotationConfiguration();
+			configuration.addAnnotatedClass(TblFormSchema.class);
+			configuration.addAnnotatedClass(HtmlElement.class);
+			configuration.addAnnotatedClass(PageMapping.class);
+			configuration.addAnnotatedClass(RegexPattern.class);
+			configuration.addProperties(prop);
+			
+			return configuration.buildSessionFactory();
+	}catch(Throwable ex){
+		//throw new ExceptionInInitializerError(ex);
+		ex.printStackTrace();
+	}
+        
+	return sessionFactory;
+	}
+	
+	public SessionFactory getSessionFactory(Class... outputClass){
+		try{
+			Properties  prop = getProperties();
+
+			AnnotationConfiguration configuration = new AnnotationConfiguration();
+				for (Class cls : outputClass) {
+					configuration.addAnnotatedClass(cls);
+				}
+				configuration.addProperties(prop);
+			return configuration.buildSessionFactory();
+		}catch(Throwable ex){
+			//throw new ExceptionInInitializerError(ex);
+			ex.printStackTrace();
+		}
+	        
+		return sessionFactory;
+	}
+	
+	private Properties getProperties(){
+		CommonUtility commonUtility = new CommonUtility();
+		Properties databaseProperties = commonUtility.loadPropertieFile("config/database.properties");
+		
+		Properties  properties = new Properties();
+        properties.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
+        properties.setProperty("hibernate.connection.url", databaseProperties.getProperty("url"));
+		properties.setProperty("hibernate.connection.username", databaseProperties.getProperty("username"));
+		properties.setProperty("hibernate.connection.password", databaseProperties.getProperty("password"));
+		properties.setProperty("hibernate.default_schema", databaseProperties.getProperty("db"));
+		//properties.setProperty("dialect", databaseProperties.getProperty("dialect"));
+		properties.setProperty("dialect", "org.hibernate.dialect.MySQLDialect");
+		properties.setProperty("hibernate.hbm2ddl.auto","update");
+		properties.setProperty("hibernate.show_sql","true");
+		properties.setProperty("hibernate.generate_statistics","false");
+		/*properties.setProperty("hibernate.c3p0.max_size",databaseProperties.getProperty("connection-pool.max_size"));
+		properties.setProperty("hibernate.c3p0.min_size",databaseProperties.getProperty("connection-pool.min_size"));
+		properties.setProperty("hibernate.c3p0.timeout",databaseProperties.getProperty("connection-pool.timeout"));
+		properties.setProperty("hibernate.c3p0.max_statements",databaseProperties.getProperty("connection-pool.max_statements"));*/
+		/*properties.setProperty("hibernate.format_sql","true");*/
+		return properties;
+	}
+}

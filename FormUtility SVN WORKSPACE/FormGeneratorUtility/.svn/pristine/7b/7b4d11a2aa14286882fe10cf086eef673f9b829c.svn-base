@@ -1,0 +1,102 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="country") 
+public class Country implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+	return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+	@Column(name="cnt_code")
+Integer cnt_code ; 
+ 
+public Integer getCnt_code() { 
+	return cnt_code; 
+} 
+public void setCnt_code(Integer cnt_code) { 
+this.cnt_code = cnt_code; 
+} 
+	@Column(name="state_code")
+Integer state_code ; 
+ 
+public Integer getState_code() { 
+	return state_code; 
+} 
+public void setState_code(Integer state_code) { 
+this.state_code = state_code; 
+} 
+	@Column(name="cnt_name")
+String cnt_name ; 
+ 
+public String getCnt_name() { 
+	return cnt_name; 
+} 
+public void setCnt_name(String cnt_name) { 
+this.cnt_name = cnt_name; 
+} 
+	@Column(name="city_code")
+Integer city_code ; 
+ 
+public Integer getCity_code() { 
+	return city_code; 
+} 
+public void setCity_code(Integer city_code) { 
+this.city_code = city_code; 
+} 
+	@Column(name="state_name")
+String state_name ; 
+ 
+public String getState_name() { 
+	return state_name; 
+} 
+public void setState_name(String state_name) { 
+this.state_name = state_name; 
+} 
+	@Column(name="city_name")
+String city_name ; 
+ 
+public String getCity_name() { 
+	return city_name; 
+} 
+public void setCity_name(String city_name) { 
+this.city_name = city_name; 
+} 
+	@Column(name="temp13")
+String temp13 ; 
+ 
+public String getTemp13() { 
+	return temp13; 
+} 
+public void setTemp13(String temp13) { 
+this.temp13 = temp13; 
+} 
+	@Column(name="abc2")
+String abc2 ; 
+ 
+public String getAbc2() { 
+	return abc2; 
+} 
+public void setAbc2(String abc2) { 
+this.abc2 = abc2; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+cnt_code+state_code+cnt_name+city_code+state_name+city_name+temp13+abc2); 
+  return "" ; 
+	}
+ }

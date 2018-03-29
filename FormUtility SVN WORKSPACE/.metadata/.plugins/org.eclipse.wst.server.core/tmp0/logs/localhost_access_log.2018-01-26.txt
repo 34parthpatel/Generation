@@ -1,0 +1,4 @@
+127.0.0.1 - - [26/Jan/2018:15:37:17 +0530] "GET / HTTP/1.1" 404 994
+0:0:0:0:0:0:0:1 - - [26/Jan/2018:15:37:20 +0530] "GET /FormGeneratorUtility/ HTTP/1.1" 302 -
+0:0:0:0:0:0:0:1 - - [26/Jan/2018:15:37:30 +0530] "GET /FormGeneratorUtility/index HTTP/1.1" 200 72609
+0:0:0:0:0:0:0:1 - - [26/Jan/2018:15:37:30 +0530] "GET /FormGeneratorUtility/fonts/glyphicons-halflings-regular.eot? HTTP/1.1" 404 992

@@ -1,0 +1,137 @@
+package com.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.dao.FormUtilityDao;
+
+@Service("formUtilityService")
+public class FormUtilityServiceImpl implements FormUtilityService {
+	@Autowired
+	private FormUtilityDao formUtilityDao;
+	
+	@Override
+	public void genrateClass() {
+		
+		formUtilityDao.genrateClass();
+	}
+
+	@Override
+	public boolean generateClassFromTable(String tableName, String buildPath, Map<String, String> controlMapWithName, Map<String, String> regexMapWithName) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.generateClassFromTable(tableName,buildPath, controlMapWithName,regexMapWithName);
+	}
+
+	@Override
+	public boolean insertData(Object dataObject, Class<?> cls) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertData(dataObject,cls);
+	}
+	
+	@Override
+	public List<TblFormSchema> getTableFormSchemaData(int fk) { 
+		// TODO Auto-generated method stub
+		return formUtilityDao.getTableFormSchemaData(fk);
+	}
+
+	@Override
+	public void generateForm(List<TblFormSchema> list, String pageName, String compileLocation) {
+		// TODO Auto-generated method stub
+		formUtilityDao.generateForm(list, pageName, compileLocation);
+	}
+
+	@Override
+	public int insertPageMappingData(PageMapping pageMapping) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.insertPageMappingData(pageMapping);
+	}
+
+	@Override
+	public void insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[]  fld_val,String[] fld_index,String[] regex, String[] start_date, String[] end_date, String[] date_format, int pageMappingId) {
+		// TODO Auto-generated method stub
+		formUtilityDao.insertFieldData(fld_ctrl, fld_type,fld_lbl, fld_name, fld_size,fld_val,fld_index,regex, start_date, end_date, date_format, pageMappingId);
+	}
+
+	@Override
+	public void createTable(String pageName,String[] fld_ctrl, String[] fld_name, String[] fld_type,
+			String[] fld_size,String[] fld_val) {
+		// TODO Auto-generated method stub
+		formUtilityDao.createTable(pageName,fld_ctrl, fld_name, fld_type,fld_size,fld_val);
+	}
+	
+	@Override
+	public PageMapping getPageMappingData(String pageMappingID) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getPageMappingData(pageMappingID);
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,String[] fld_ctrl, String[] fld_val) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.updateTableSchema(pageName, fld_name, fld_type,fld_size,fld_ctrl,fld_val);
+	}
+
+	@Override
+	public long deletePageTableFields(int pageId) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.deletePageTableFields(pageId);
+	}
+
+	@Override
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.dropForm(pageMappingId,pageMappingName,compileLocation);
+	}
+
+	@Override
+	public List<PageMapping> getPageMappingData() {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getPageMappingData();
+	}
+
+	@Override
+	public List<TblFormSchema> getListTableFormSchema(String pageMappingId) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListTableFormSchema(pageMappingId);
+	}
+
+	@Override
+	public String generateHTMLFormTableString(List<TblFormSchema> listFormSchemas,List<RegexPattern> listRegexPatterns) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.generateHTMLFormTableString(listFormSchemas, listRegexPatterns);
+	}
+
+	@Override
+	public List getListDataFromModelName(String modelName) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListDataFromModelName(modelName);
+	}
+
+	@Override
+	public boolean isPageExist(String pageName) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.isPageExist(pageName);
+	}
+
+	@Override
+	public String getHTMLRegexPatternData(List<RegexPattern> listRegexPatterns) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getHTMLRegexPatternData( listRegexPatterns);
+	}
+
+	@Override
+	public List<RegexPattern> getListRegEx(String[] regex) {
+		// TODO Auto-generated method stub
+		return formUtilityDao.getListRegEx(regex);
+	}
+
+	
+
+}

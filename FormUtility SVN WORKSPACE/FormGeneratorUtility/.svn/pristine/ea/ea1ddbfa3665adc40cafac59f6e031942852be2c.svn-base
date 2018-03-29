@@ -1,0 +1,739 @@
+package com.dao;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.bean.HtmlElement;
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.util.common.CommonUtility;
+import com.util.hibernate.operation.Operation;
+import com.util.jdbc.operation.JDBCOperation;
+import com.util.jdbc.util.JDBCUtil;
+
+@Repository("formUtilityDao")
+public class FormUtilityDaoImpl implements FormUtilityDao {
+
+	@Autowired
+	JDBCUtil jdbcUtil;
+
+	@Autowired
+	CommonUtility commonUtility;
+	
+	@Autowired
+	Operation hibernateOperation;
+	
+	@Override
+	public void genrateClass() {
+		// TODO Auto-generated method stub
+		System.out.println("hello");
+	}
+
+	@Override
+	public boolean generateClassFromTable(String tableName, String buildPath, Map<String, String> controlMapWithName) {
+		// TODO Auto-generated method stub
+		Connection connection = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		ResultSet resultSetOfPK = null;
+		ResultSet resultSetForAutoIncrement = null;
+		StringBuffer classFileData = new StringBuffer();
+		StringBuffer toStringMethod = new StringBuffer();
+		toStringMethod.append("System.out.println(\" To String method \"  ");
+		classFileData.append("package "+commonUtility.getValueFromPropertieFile("beanPackage")+";  \n" + "import java.io.Serializable; \n");
+		classFileData.append("import javax.persistence.Column;\n" + " import javax.persistence.Entity; \n "
+				+ "import javax.persistence.GeneratedValue;\n import javax.persistence.GenerationType; \n"
+				+ " import javax.persistence.Id; \n"
+				+ " import org.hibernate.validator.Pattern; \n"
+				// + " import javax.persistence.NamedQuery; \n"
+				+ " import javax.persistence.Table; \n " + "import lombok.Getter; \n " + "import lombok.Setter; \n");
+
+		classFileData.append("@Entity \n" + "@Table(name=\"" + tableName + "\") \n");
+		classFileData.append("public class " + tableName.substring(0, 1).toUpperCase() + tableName.substring(1)
+				+ " implements Serializable {\n");
+
+		try {
+			connection = jdbcUtil.getConnection();
+			DatabaseMetaData dbmd;
+
+			dbmd = connection.getMetaData();
+			String[] types = { "TABLE" };
+			resultSet = dbmd.getColumns(null, null, tableName, "%");
+
+			// This code for get Primarykey Column
+			resultSetOfPK = dbmd.getPrimaryKeys(null, null, tableName);
+			Set<String> primaryKeys = new HashSet<>();
+			while (resultSetOfPK.next()) {
+				// System.out.println("Primary key id " + );
+				primaryKeys.add(resultSetOfPK.getString(4));
+			}
+			statement = connection.createStatement();
+
+			// This code for get AutoincrementColumn
+			Set<String> autoIncrementColumn = new HashSet<>();
+			resultSetForAutoIncrement = statement.executeQuery("SELECT * FROM " + tableName);
+			ResultSetMetaData rsmd = resultSetForAutoIncrement.getMetaData();
+			int columnCount = rsmd.getColumnCount();
+			for (int i = 1; i <= columnCount; i++) {
+				String name = rsmd.getColumnName(i);
+				if (rsmd.isAutoIncrement(i)) {
+					autoIncrementColumn.add(name);
+				}
+			}
+
+			// Create getter and setter for java file.
+			while (resultSet.next()) {
+				String fieldName = resultSet.getString(4);
+
+				String fieldType = resultSet.getString(6);
+				int typeCode = resultSet.getInt(5);
+				String fieldSize = resultSet.getString(7);
+				if (primaryKeys.contains(fieldName)) {
+					classFileData.append("	@Id  \n");
+				}
+				if (autoIncrementColumn.contains(fieldName)) {
+					/*classFileData
+							.append("@GenericGenerator(name = \"increment\", strategy = \"org.hibernate.id.IncrementGenerator\") \n"
+									+ "@GeneratedValue(generator = \"increment\") \n");*/
+					
+					classFileData.append("	@GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+				}
+				if( controlMapWithName.get(fieldName)!=null?controlMapWithName.get(fieldName.toLowerCase()).equals("password"):false){
+					String dataType = commonUtility.getSqlTypeName(typeCode);
+					// fieldName = fieldName.substring(0, 1).toUpperCase() +
+					// fieldName.substring(1);
+					String fieldNameForMethod = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+					String getterSetter = "@org.hibernate.validator.NotNull(message=\""+fieldName+" can not be null\")"
+							+ "@org.hibernate.validator.Length(max="+fieldSize+", message =\""+fieldName+"Data must be in Proper length.\")\n"
+							+ "@Pattern(regex=\"(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z].*[A-Z])(?=.*[@#$%^&+=].*[@#$%^&+=])(?=\\\\S+$).{8,}\",message=\"Enter proper "+fieldName+".\")\n"
+							+ " @Column(name=\"" + fieldName + "\")\n"
+					// + " @Getter \n" + " @Setter \n" + " "
+							+ dataType + " " + fieldName + " ; \n \n" + "public " + dataType + " get" + fieldNameForMethod
+							+ "() { \n" + " return " + fieldName + "; \n" + "} \n" + "public void set" + fieldNameForMethod + "("
+							+ dataType + " " + fieldName + ") { \n" + "this." + fieldName + " = " + fieldName + "; \n" + "} \n";
+					classFileData.append(getterSetter);
+					
+				}else {
+					classFileData.append(commonUtility.createGetterSatter(fieldType, fieldName, typeCode,fieldSize));
+				}
+				toStringMethod.append("+"+fieldName);
+								/*
+				 * System.out.println("Field Name: "+fieldName);
+				 * System.out.println("Table catalog :" + fieldType);
+				 * System.out.println("Table Schema :" + fieldSize);
+				 * System.out.println("===================" +
+				 * resultSet.getString(11));
+				 */
+			}
+			toStringMethod.append("); \n");
+			
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} finally {
+			try {
+				resultSet.close();
+				resultSetForAutoIncrement.close();
+				resultSetOfPK.close();
+				statement.close();
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		classFileData.append("	@Override \n"
+							+ "	public String toString() { \n"
+							+ "" + toStringMethod.toString() +" "
+							+ " return \"\" ; \n"
+							+ "	}\n" ) ;
+		classFileData.append(" }");
+		System.out.println(classFileData.toString());
+		String javaFileUri = commonUtility.getValueFromPropertieFile("javaFileLocation")
+				+ tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+		if (!commonUtility.createFile(javaFileUri, classFileData.toString(), "java")) {
+			
+			return false;
+		}
+		//buildPath + "WEB-INF\\classes\\com\\bean\\"
+		commonUtility.createFile(buildPath + "WEB-INF\\classes\\"+  commonUtility.getValueFromPropertieFile("beanFilePath") +tableName.substring(0, 1).toUpperCase() + tableName.substring(1), classFileData.toString(), "java");
+		
+		if (commonUtility.compileJavaFile(buildPath + "WEB-INF\\classes\\"+ commonUtility.getValueFromPropertieFile("beanFilePath")+tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + ".java")) {
+			System.out.println("Class Compile on server is done");
+			return true;
+		}
+	
+		// compiler.run(null, null,
+		// null,commonUtility.getValueFromPropertieFile("javaFileLocation")+tableName.substring(0,
+		// 1).toUpperCase() + tableName.substring(1)+".java" );
+		// System.out.println( System.getProperty("java.class.path"));
+		// System.out.println("Final code is \n"+ classFileData.toString());
+		return false;
+	}
+
+	
+	@Override
+	public boolean insertData(Object dataObject, Class<?> cls) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.insertData(dataObject, cls);	
+	}
+	
+	//Parth code.
+	
+	
+	@Override
+	public List<TblFormSchema> getTableFormSchemaData(int fk) {
+		// TODO Auto-generated method stub
+		Operation operation = new Operation();
+		List<TblFormSchema> list = operation.listDataWithWhreClause("TblFormSchema", "fk="+fk + " order by field_index");
+		
+		return list;
+	}
+	
+	@Override
+	public void generateForm(List<TblFormSchema> list, String pageName, String compileLocation)
+	{
+		
+		Operation operation = new Operation();
+		List<HtmlElement> htmlElements = operation.listData("HtmlElement");
+		List<RegexPattern> regexPatterns = operation.listData("RegexPattern");
+		
+		StringBuilder htmlStringBuilder=new StringBuilder();
+		StringBuilder listHeader = new StringBuilder();
+		StringBuilder listField = new StringBuilder();
+		
+		htmlStringBuilder.append("<%@taglib prefix=\"c\" uri=\"http://java.sun.com/jsp/jstl/core\" %>"
+				+ "<!DOCTYPE html ><html><head><title>"+pageName+"</title>");
+		htmlStringBuilder.append("<link rel=\"stylesheet\" href=\"../css/bootstrap.min.css\">" +
+			"<link rel=\"stylesheet\" href=\"../css/jquery.datetimepicker.min.css\">" +
+			"<script src=\"../js/jquery-3.2.1.min.js\"></script>" +
+			"<script src=\"../js/bootstrap.min.js\"></script>" +
+			"<script src=\"../js/jquery.datetimepicker.full.js\"></script>");
+		htmlStringBuilder.append("</head>");
+		htmlStringBuilder.append("<body>");
+		htmlStringBuilder.append("<div class=\"container\">");
+		htmlStringBuilder.append("<center><h2>" +pageName+ "</h2></center>");
+		htmlStringBuilder.append("<form action=\"../insertForm/"+pageName+"\" class=\"form-horizontal\" method=\"post\">");
+		
+		for(int i=0;i<list.size();i++)
+		{
+			int patternId = 0;
+			TblFormSchema tblFormSchema = list.get(i);
+			listHeader.append("<th>"+tblFormSchema.getFieldLabel()  + "</th>");
+			listField.append("<td class=\"col-m-2\"><c:out value=\"${obj."+tblFormSchema.getFieldName().toLowerCase()+"}\" /></td>");
+			
+			htmlStringBuilder.append("<div class=\"form-group\">");
+			htmlStringBuilder.append("<label class=\"control-label col-sm-4\">"+tblFormSchema.getFieldLabel() + "</label>");
+			htmlStringBuilder.append("<div class=\"col-sm-5\">");
+			
+			patternId = commonUtility.getRegexPatternId(tblFormSchema.getFieldType());
+			if(tblFormSchema.getFieldController().equals("password")){
+				patternId = commonUtility.getRegexPatternId("password");
+			}
+			
+			
+			if(tblFormSchema.getFieldController().equals("textbox"))
+			{
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				htmlStringBuilder.append(htmlElements.get(0).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":pattern", regexPatterns.get(patternId).getPattern())
+						.replace(":title", regexPatterns.get(patternId).getMassage()) + " />");
+			}
+			if(tblFormSchema.getFieldController().equals("password"))
+			{
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				htmlStringBuilder.append(htmlElements.get(6).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":pattern", regexPatterns.get(patternId).getPattern())
+						.replace(":title", regexPatterns.get(patternId).getMassage())+ " />");
+				System.out.println("psw " + regexPatterns.get(patternId).getPattern());
+			}
+			if(tblFormSchema.getFieldController().equals("number"))
+			{
+				/*htmlStringBuilder.append("<td><input type=\"text\" name=\"textbox"+(i+""+counter)+"\" id=\"textbox"+(i+""+counter)+"\" /></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(0).getElementName().replace("?", tblFormSchema.getFieldName()) + " />");
+				htmlStringBuilder.append(htmlElements.get(8).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						+ " />");
+			}
+			else if(tblFormSchema.getFieldController().equals("textarea"))
+			{
+				/*htmlStringBuilder.append("<td><textarea name=\"textarea"+(i+""+counter)+"\" id=\"textarea"+(i+""+counter)+"\" placeholder=\"Enter text...\" rows=\"5\" cols=\"30\"></textarea></td>");*/
+				//htmlStringBuilder.append(htmlElements.get(1).getElementName().replace("?", tblFormSchema.getFieldName()) +" />");
+				htmlStringBuilder.append(htmlElements.get(1).getElementName()
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						.replace(":pattern", regexPatterns.get(patternId).getPattern())+ " ></textarea>");
+			}
+			else if(tblFormSchema.getFieldController().equals("radio"))
+			{
+				
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				System.out.println("--- " + Arrays.toString(fldValSplit));
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					System.out.println("'"+fldValSplit[j].trim()+"'");
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						//htmlStringBuilder.append(htmlElements.get(2).getElementName().replace("?", tblFormSchema.getFieldName()) + " value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append(htmlElements.get(2).getElementName()
+								.replace(":id", tblFormSchema.getFieldName())
+								.replace(":name", tblFormSchema.getFieldName())
+								.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex())) + 
+								" value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						
+					}
+						
+				}
+				
+			}
+			else if(tblFormSchema.getFieldController().equals("checkBox"))
+			{
+				
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						//htmlStringBuilder.append(htmlElements.get(3).getElementName().replace("?", tblFormSchema.getFieldName()) + " value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						htmlStringBuilder.append(htmlElements.get(3).getElementName()
+								.replace(":id", tblFormSchema.getFieldName())
+								.replace(":name", tblFormSchema.getFieldName())
+								.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex())) + 
+								" value="+fldValSplit[j].trim()+" /> " + fldValSplit[j].trim() +"<br />");
+						
+					}
+				}
+				
+			}
+			else if(tblFormSchema.getFieldController().equals("comboBox"))
+			{
+				htmlStringBuilder.append(htmlElements.get(4).getElementName().replace("?", tblFormSchema.getFieldName()).replace("@", Integer.toString( tblFormSchema.getFieldIndex())) + " />");
+				String fldValSplit[] = tblFormSchema.getFieldValue().split(",");
+				for(int j=0;j<fldValSplit.length;j++)
+				{
+					if( (!fldValSplit[j].trim().equals("")) && fldValSplit[j].trim() != null )
+					{
+						htmlStringBuilder.append("<option value='"+fldValSplit[j].trim()+"'>"+fldValSplit[j].trim()+"</option>");
+					}
+				}
+				htmlStringBuilder.append("</select>");
+			}
+			else if(tblFormSchema.getFieldController().equals("date") && tblFormSchema.getFieldType().equals("DATE")){
+				htmlStringBuilder.append(htmlElements.get(5).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						+ " />");
+			}
+			
+			else if(tblFormSchema.getFieldController().equals("date") && tblFormSchema.getFieldType().equals("DATETIME")){
+				htmlStringBuilder.append(htmlElements.get(7).getElementName()
+						.replace(":name", tblFormSchema.getFieldName())
+						.replace(":id", tblFormSchema.getFieldName())
+						.replace(":tabindex", Integer.toString( tblFormSchema.getFieldIndex()))
+						+ " />");
+			}
+			htmlStringBuilder.append("</div>");
+			htmlStringBuilder.append("</div>");
+			
+		}
+		htmlStringBuilder.append("<div class=\"form-group\">");
+		htmlStringBuilder.append("<div class=\"col-sm-offset-4 col-sm-5\">");
+		htmlStringBuilder.append("<input type=\"submit\" class=\"btn btn-success\" />");
+		htmlStringBuilder.append("</div>");
+		htmlStringBuilder.append("</div>");
+		htmlStringBuilder.append("</form>"
+				+ "<c:if test=\"${not empty message}\">"
+				+ "<font color='green'><c:out value=\"${message }\"></c:out></font>"
+				+"</c:if>");
+		htmlStringBuilder.append("<c:if test=\"${not empty errMessage}\">"
+				+ "<font color='red'><c:out value=\"${errMessage }\"></c:out></font>"
+				+"</c:if>");
+		htmlStringBuilder.append("</div>"
+				+ "<div class=\"container\" style=\"overflow-x:auto;\">"
+				+ "<c:if test=\"${not empty listData}\" >"
+				+ "<table class=\"table\"> 	<thead style='color:#ccffe6;background-color:#87ceeb'>		<tr>"
+				+ ""+listHeader.toString()
+				+ "</tr></thead>"
+				+ "<c:forEach items=\"${listData}\" var=\"obj\">"
+				+ "<tbody><tr>"
+				+ ""+listField.toString()
+				+ "</tr></tbody>"
+				+ "</c:forEach>"
+				+"</c:if>"
+				+"</table>");
+		htmlStringBuilder.append("</body>");
+		htmlStringBuilder.append("<script src=\"../js/formutility.js\"></script>");
+		htmlStringBuilder.append("</html>");
+		
+		try
+		{
+			commonUtility.createFile(compileLocation + pageName, htmlStringBuilder.toString(), "jsp");
+			commonUtility.createFile(commonUtility.getValueFromPropertieFile("jspFileLocation") + pageName, htmlStringBuilder.toString(), "jsp");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		System.out.println("form code : " + htmlStringBuilder.toString());
+	}
+
+	@Override
+	public int insertPageMappingData(PageMapping pageMapping) {
+		// TODO Auto-generated method stub
+		Operation operation = new Operation();
+		
+		try
+		{
+			return operation.insertDataAndReturnId(pageMapping);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	@Override
+	public void insertFieldData(String[] fld_ctrl,String[] fld_type, String[] fld_lbl,
+			String[] fld_name, String[] fld_size, String[] fld_val,String[] fld_index, int pageMappingId) {
+		// TODO Auto-generated method stub
+		Operation operation = new Operation();
+		
+		for(int i=0;i<fld_ctrl.length;i++)
+		{
+			TblFormSchema tblFormSchema = new TblFormSchema();
+			tblFormSchema.setFk(pageMappingId);
+			tblFormSchema.setFieldController(fld_ctrl[i]);
+			tblFormSchema.setFieldLabel(fld_lbl[i]);
+			tblFormSchema.setFieldName(fld_name[i]);
+			tblFormSchema.setFieldType(fld_type[i]);
+			tblFormSchema.setFieldIndex(Integer.parseInt( fld_index[i]));
+			if(fld_ctrl[i].equals("radio") ||  fld_ctrl[i].equals("comboBox"))
+			{
+				String fldValSplit[] = fld_val[i].split(",");
+				int maxVal = fldValSplit[0].length();
+				for(int j=1;j<fldValSplit.length;j++)
+				{
+					if(fldValSplit[j].trim().length() > maxVal)
+					{
+						maxVal = fldValSplit[j].trim().length();
+					}
+				}
+				tblFormSchema.setSize(maxVal);
+			}
+			else if (fld_ctrl[i].equals("checkBox")) {
+				tblFormSchema.setSize(fld_val[i].length());
+			}
+			else if(fld_ctrl[i].equals("date") ){
+				tblFormSchema.setSize(0);
+			}
+			else
+			{
+				tblFormSchema.setSize(Integer.parseInt(fld_size[i]));
+			}
+			
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("checkBox") || fld_ctrl[i].equals("comboBox"))
+			{
+				tblFormSchema.setFieldValue(fld_val[i]);
+			}
+			operation.insertData(tblFormSchema);
+		}
+	}
+
+	@Override
+	public void createTable(String pageName, String[] fld_ctrl, String[] fld_name, String[] fld_type,
+			String[] fld_size, String[] fld_val) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		//int cntRad = 0;
+		
+		String query = "CREATE TABLE "+pageName+" ( "
+				+ " ID INT PRIMARY KEY AUTO_INCREMENT, ";
+		
+		for(int i=0;i<fld_name.length;i++)
+		{
+			if(fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("comboBox"))
+			{
+				String fldValSplit[] = fld_val[i].split(",");
+				int maxVal = fldValSplit[0].trim().length();
+				for(int j=1;j<fldValSplit.length;j++)
+				{
+					if(fldValSplit[j].trim().length() > maxVal)
+					{
+						maxVal = fldValSplit[j].trim().length();
+					}
+				}
+				query += " "+fld_name[i].toLowerCase()+" "+fld_type[i]+"("+maxVal+") ";
+			}
+			else if(fld_ctrl[i].equals("checkBox"))
+			{
+				query += " "+fld_name[i].toLowerCase()+" "+fld_type[i]+"("+fld_val[i].length()+") ";
+			}else if(fld_ctrl[i].equals("date")){
+				query += " "+fld_name[i].toLowerCase()+" "+fld_type[i]+" ";
+			}
+			else
+			{
+				query += " "+fld_name[i].toLowerCase()+" "+fld_type[i]+"("+fld_size[i]+") ";
+			}
+			if(i < fld_name.length-1)
+			{
+				query += ", ";
+			}
+		}
+		query += ")";
+		System.out.println("query : " + query);
+		operation.createTable(query);
+		
+	}
+	
+	@Override
+	public PageMapping getPageMappingData(String pageMappingID) {
+		// TODO Auto-generated method stub
+		return (PageMapping) hibernateOperation.getDataById(PageMapping.class,Integer.parseInt( pageMappingID));
+	}
+
+	@Override
+	public boolean updateTableSchema(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,
+			String[] fld_ctrl, String[] fld_val) {
+		// TODO Auto-generated method stub
+		JDBCOperation operation = new JDBCOperation();
+		System.out.println("In create table");
+
+		String query = "Alter TABLE " + pageName + "  " + "  ";
+
+		query += updateTableQuery(pageName, fld_name, fld_type, fld_size, fld_ctrl, fld_val);
+		query += "";
+		System.out.println("query : " + query);
+		operation.createTable(query);
+		return true;
+	}
+	
+	
+	public String updateTableQuery(String pageName, String[] fld_name, String[] fld_type, String[] fld_size,
+			String[] fld_ctrl, String[] fld_val) {
+		Connection connection = null;
+		ResultSet resultSet = null;
+		StringBuilder alterQuery = new StringBuilder();
+		System.out.println("fld name" + fld_name.length);
+		System.out.println("fld_type" + fld_type.length);
+		System.out.println("fld_size" + fld_size.length);
+		System.out.println("fld_ctrl" + Arrays.toString(fld_ctrl));
+		try {
+			connection = jdbcUtil.getConnection();
+			DatabaseMetaData dbmd;
+			dbmd = connection.getMetaData();
+			String[] types = { "TABLE" };
+			resultSet = dbmd.getColumns(null, null, pageName, "%");
+			List<String> existingField = new LinkedList<>();
+			// Map<String, String> formField = new HashMap<>();
+			int cntRad = 0;
+			while (resultSet.next()) {
+				existingField.add(resultSet.getString(4));
+			}
+
+			for (int i = 0; i < fld_name.length; i++) {
+				if (fld_ctrl[i].equals("radio") || fld_ctrl[i].equals("comboBox")) {
+					String fldValSplit[] = fld_val[cntRad].split(",");
+					int maxVal = fldValSplit[0].trim().length();
+
+					for (int j = 1; j < fldValSplit.length; j++) {
+						if (fldValSplit[j].trim().length() > maxVal) {
+							maxVal = fldValSplit[j].trim().length();
+						}
+					}
+					System.out.println("Field Value" + fld_val[cntRad] + "Max val is " + maxVal);
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(
+								" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + maxVal + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery
+								.append(" add " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + maxVal + ") ");
+					}
+					cntRad++;
+				} else if (fld_ctrl[i].equals("checkBox")) {
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + "("
+								+ fld_val[cntRad].length() + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery.append(" add " + fld_name[i].toLowerCase() + " " + fld_type[i] + "("
+								+ fld_val[cntRad].length() + ") ");
+					}
+					cntRad++;
+				} else {
+
+					if (existingField.contains(fld_name[i].toLowerCase())) {
+						alterQuery.append(
+								" modify " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + fld_size[i] + ") ");
+						existingField.remove(fld_name[i].toLowerCase());
+					} else {
+						alterQuery.append(
+								" add " + fld_name[i].toLowerCase() + " " + fld_type[i] + "(" + fld_size[i] + ") ");
+					}
+
+				}
+				alterQuery.append(", \n");
+
+			}
+			for (String remainField : existingField) {
+				if (!remainField.equalsIgnoreCase("id")) {
+					alterQuery.append(" drop " + remainField + " ");
+					alterQuery.append(", \n");
+				}
+
+			}
+
+		} catch (SQLException e) {
+
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				resultSet.close();
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+			}
+		}
+		return alterQuery.toString().substring(0, alterQuery.toString().length() - 3);
+	}
+
+	@Override
+	public long deletePageTableFields(int pageId) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.deleteData("TblFormSchema", " fk = "+pageId);
+	}
+	
+	@Override
+	public boolean dropForm(int pageMappingId, String pageMappingName, String compileLocation) {
+		// TODO Auto-generated method stub
+		List<String> queries = new ArrayList<String>();
+		queries.add("DELETE FROM page_mapping WHERE id="+pageMappingId);
+		queries.add("DELETE FROM tbl_form_schema WHERE fk="+pageMappingId);
+		queries.add("DROP TABLE "+pageMappingName);
+		
+		boolean status = false;
+		
+		try
+		{
+			status = hibernateOperation.batchProcessing(queries);
+			if(commonUtility.deleteFile(commonUtility.getValueFromPropertieFile("jspFileLocation") + pageMappingName + ".jsp"))
+			{
+				if(commonUtility.deleteFile(compileLocation + pageMappingName + ".jsp"))
+				{
+					if(commonUtility.deleteFile(commonUtility.getValueFromPropertieFile("javaFileLocation") + pageMappingName + ".java"))
+					{
+						return commonUtility.deleteFile(compileLocation + "WEB-INF\\classes\\"+commonUtility.getValueFromPropertieFile("javaFileLocation")+pageMappingName.substring(0, 1).toUpperCase() + pageMappingName.substring(1) + ".java");
+					}
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	@Override
+	public List<PageMapping> getPageMappingData() {
+		// TODO Auto-generated method stub
+		return hibernateOperation.listData("PageMapping");
+	}
+
+	@Override
+	public List<TblFormSchema> getListTableFormSchema(String pageMappingId) {
+		// TODO Auto-generated method stub
+		return hibernateOperation.listDataWithWhreClause("TblFormSchema", "fk = " + Integer.parseInt(pageMappingId));
+	}
+
+	@Override
+	public String generateHTMLFormTableString(List<TblFormSchema> listFormSchemas) {
+		// TODO Auto-generated method stub
+		StringBuilder htmlText= new StringBuilder();
+		int counter = 1;
+		for(TblFormSchema tblFormSchemaObject : listFormSchemas){
+			
+			htmlText.append("<tr id='tbl_tr"+counter+"'>"+
+					commonUtility.getTDTegFromControlType(tblFormSchemaObject.getFieldController(),counter) +
+					commonUtility.getTDTegFromDataType(tblFormSchemaObject.getFieldType()) 
+					
+					+ "<td><input type='text' name='fld_lbl' id='fld_lbl' value='"+tblFormSchemaObject.getFieldLabel()+"' /></td>" +
+					"<td><input type='text' name='fld_name' id='fld_name' value='"+tblFormSchemaObject.getFieldName()+"' /></td>" );
+					if(tblFormSchemaObject.getFieldValue() == null){
+						htmlText.append("<td><input type='text' name='fld_size' id='fld_size'  value='"+tblFormSchemaObject.getSize()+"' /></td>");
+						htmlText.append("<td><input type='text' name='fld_index' id='fld_index' size='1' maxlength='2'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td> <input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><textarea rows='2' style='display:none;' cols='22' name='fld_val' id='fld_val' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+					}else{
+						htmlText.append("<td><textarea rows='2' cols='22' name='fld_val' id='fld_val' placeholder='Enter values...' >"+tblFormSchemaObject.getFieldValue()+"</textarea></td>");
+						htmlText.append("<td><input type='text' name='fld_index' id='fld_index' size='1' maxlength='2'  value='"+tblFormSchemaObject.getFieldIndex()+"' ></td>");
+						htmlText.append("<td> <input type='checkBox' name='cb' id='cb' value='tbl_tr"+counter+"' > </td>");
+						htmlText.append("<td><input type='hidden' name='fld_size' id='fld_size'></td>");
+					}
+					//htmlText.append("<td><input type='button' id='dropBtn' onClick='removeTableRow(\"tbl_tr"+counter+"\")' value='Drop'></td>");
+					
+				
+					htmlText.append( "</tr>");
+					++counter; 
+		}
+
+		return htmlText.toString();
+	}
+
+	@Override
+	public List getListDataFromModelName(String modelName) {
+		// TODO Auto-generated method stub
+		System.out.println("modelName : " + modelName);
+		Class<?> cls = commonUtility.getClassTypeFromName(modelName);
+		return hibernateOperation.listData(modelName,cls);
+	}
+
+	@Override
+	 public boolean isPageExist(String pageName) {
+	  // TODO Auto-generated method stub
+	  if(hibernateOperation.countTotalData("PageMapping", "page_name='"+pageName+"'") != 0)
+	  {
+	   return true;
+	  }
+	  return false;
+	 }
+
+	
+}

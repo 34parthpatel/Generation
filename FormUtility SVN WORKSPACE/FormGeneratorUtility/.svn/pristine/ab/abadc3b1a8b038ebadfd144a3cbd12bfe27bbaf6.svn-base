@@ -1,0 +1,473 @@
+package com.util.hibernate.operation;
+
+import java.io.Serializable;
+import java.util.List;
+
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.exception.SQLGrammarException;
+import org.springframework.stereotype.Repository;
+
+import com.util.hibernate.util.HibernateUtility;
+
+@Repository("hibernateOperation")
+public class Operation {
+	//
+	public <T> boolean insertData(T data){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			session.save(data);
+			transaction.commit();
+			return true;
+		} catch(SQLGrammarException e){
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}
+		catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	public <T> boolean insertData(T data,Class<?> cls){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory(cls);
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			session.save(data);
+			transaction.commit();
+			return true;
+		} catch(SQLGrammarException e){
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}
+		catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	//
+	public <T>  List<T> listData(String modelName){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			List<T> dataList= session.createQuery("from "+modelName).list();
+			return dataList;
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return null;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	public <T>  List<T> listData(String modelName,Class<?> cls){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory(cls);
+			session = sessionFactory.openSession();
+			List<T> dataList= session.createQuery("from "+modelName).list();
+			return dataList;
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return null;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+		}
+	}
+	
+	//
+	public <T>  int countTotalData(String modelName,String whareClause ){
+		String queryWhere="";
+		if(whareClause!=null || whareClause!=""){
+			queryWhere = "where " + whareClause;
+			System.err.println(queryWhere);
+		}
+		//System.out.println(whareClause);
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			
+			Query query= session.createQuery("select count(*) from "+modelName + " "+ queryWhere );
+			
+			return ((Long) query.uniqueResult()).intValue();
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return 0;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	//
+	public <T>  List<T> listDataWithWhreClause(String modelName,String whareClause){
+		System.out.println(whareClause);
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			Query query = session.createQuery("from "+modelName + " where " + whareClause );
+			
+			List<T> dataList= query.list();
+			
+			return dataList;
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return null;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	//
+	
+	public <T>  List<T> listDataWithWhreClause(String modelName,String whareClause,int start,int noOfRecord){
+		System.out.println(whareClause);
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			
+			Query query= session.createQuery("from "+modelName + " where " + whareClause );
+			query.setFirstResult(start);
+			query.setMaxResults(noOfRecord);
+			return query.list();
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return null;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	
+	///
+	
+	public boolean deleteData(Class<?> type, Serializable id){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction =null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			Object data= session.load(type, id);
+			transaction = session.beginTransaction();
+			if(data!=null){
+				
+				session.delete(data);
+				transaction.commit();
+				return true;
+			}
+			return false;
+		}catch(org.hibernate.ObjectNotFoundException e){
+			e.printStackTrace();
+			return false;
+		}
+		catch (Exception e) {
+			
+			e.printStackTrace();
+			return false;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	public Object getDataById(Class<?> type, Serializable id){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			Object data= session.get(type, id);
+			if(data!=null){
+			
+				return data;
+			}else{
+				return null;
+			}
+		}catch(SQLGrammarException e){
+			e.printStackTrace();
+			return false;
+		}catch(org.hibernate.ObjectNotFoundException e){
+			e.printStackTrace();
+			return null;
+		}
+		catch (Exception e) {
+			
+			e.printStackTrace();
+			return null;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	
+	public <T> boolean updateData(T userData) {
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			session.update(userData);
+			transaction.commit();
+			return true;
+		} catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	
+	public  int updateDataWithSQL(String queryString) {
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			Query query = session.createSQLQuery(queryString);
+			int noOfRecordUpdated = query.executeUpdate();
+			transaction.commit();
+			return noOfRecordUpdated;
+		} catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return 0;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+	//Parth code
+	public <T> int insertDataAndReturnId(T data){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		int id = 0;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			id = (int) session.save(data);
+			transaction.commit();
+			return id;
+		} catch(SQLGrammarException e){
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return 0;
+		}
+		catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return 0;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	
+//	return True or False
+	public boolean executeSqlQuery(String query){
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		Transaction transaction = null;
+		SQLQuery sqlQuery = null;
+		int id = 0;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+			
+			sqlQuery = session.createSQLQuery(query);
+			sqlQuery.executeUpdate();
+			
+			transaction.commit();
+			return true;
+		} catch(SQLGrammarException e){
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}
+		catch (Exception e) {
+			if(transaction != null){
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+	public int deleteData(String modelName,String whareClause ){
+		String queryWhere="";
+		if(whareClause!=null || whareClause!=""){
+			queryWhere = "where " + whareClause;
+			System.err.println(queryWhere);
+		}
+		//System.out.println(whareClause);
+		Session session = null;
+		SessionFactory sessionFactory =  null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			
+			Query query= session.createQuery("delete from "+modelName + " "+ queryWhere );
+		
+			return ( query.executeUpdate());
+	
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return 0;
+		}finally {
+			if(session != null && sessionFactory !=null){
+				session.close();
+				sessionFactory.close();
+			}
+			
+		}
+	}
+
+	// return True or False after successfully executing all queries
+	public boolean batchProcessing(List<String> queries) {
+		Session session = null;
+		SessionFactory sessionFactory = null;
+		Transaction transaction = null;
+		SQLQuery sqlQuery = null;
+		try {
+			sessionFactory = new HibernateUtility().getSessionFactory();
+			session = sessionFactory.openSession();
+			transaction = session.beginTransaction();
+
+			for (String query : queries) {
+				sqlQuery = session.createSQLQuery(query);
+				sqlQuery.executeUpdate();
+			}
+
+			transaction.commit();
+			return true;
+		} catch (SQLGrammarException e) {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		} catch (Exception e) {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+			e.printStackTrace();
+			return false;
+		} finally {
+			if (session != null && sessionFactory != null) {
+				session.close();
+				sessionFactory.close();
+			}
+
+		}
+	}
+}

@@ -1,0 +1,435 @@
+package com.util.common;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+
+import org.apache.commons.beanutils.BeanUtils;
+import org.hibernate.validator.ClassValidator;
+import org.hibernate.validator.InvalidValue;
+import org.springframework.stereotype.Repository;
+
+
+@Repository("commonUtility")
+public class CommonUtility {
+
+	public String createGetterSatter(String fieldType, String fieldName, int typeCode,String fieldSize) {
+		// TODO Auto-generated method stub
+		String dataType = getSqlTypeName(typeCode);
+		// fieldName = fieldName.substring(0, 1).toUpperCase() +
+		// fieldName.substring(1);
+		String fieldNameForMethod = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+		String getterSetter = ""+getValidationFromType(typeCode,fieldName,fieldSize)+"\n"
+				+ " @Column(name=\"" + fieldName + "\")\n"
+		// + " @Getter \n" + " @Setter \n" + " "
+				+ dataType + " " + fieldName + " ; \n \n" + "public " + dataType + " get" + fieldNameForMethod
+				+ "() { \n" + " return " + fieldName + "; \n" + "} \n" + "public void set" + fieldNameForMethod + "("
+				+ dataType + " " + fieldName + ") { \n" + "this." + fieldName + " = " + fieldName + "; \n" + "} \n";
+		return getterSetter;
+	}
+
+	public String getSqlTypeName(int type) {
+
+		switch (type) {
+		case Types.BIT:
+			return "boolean";
+		case Types.TINYINT:
+			return "boolean";
+		case Types.SMALLINT:
+			return "Integer";
+		case Types.INTEGER:
+			return "Integer";
+		case Types.BIGINT:
+			return "Long";
+		case Types.FLOAT:
+			return "Float";
+		case Types.REAL:
+			return "Float";
+		case Types.DOUBLE:
+			return "Double";
+		case Types.NUMERIC:
+			return "Double";
+		case Types.DECIMAL:
+			return "Double";
+		case Types.CHAR:
+			return "String";
+		case Types.VARCHAR:
+			return "String";
+		case Types.LONGVARCHAR:
+			return "String";
+		case Types.DATE:
+			return "java.sql.Date";
+		case Types.TIME:
+			return "java.sql.Time";
+		case Types.TIMESTAMP:
+			return "java.sql.Timestamp";
+		}
+		return "String";
+	}
+
+	//added by bhadresh bajariya for server side validation 
+	public String getValidationFromType(int type, String fieldName,String fieldSize){
+		//@Pattern(regex="^[A-Za-z\\s]+$",message="Enter proper name.")
+		switch (type) {
+		case Types.INTEGER:
+			/*return "@org.hibernate.validator.Range(max="+String.format("%1$" + fieldSize + "s", "").replace(' ', '9')+",message=\"Data must be in Proper length.\")"
+				+ "@Pattern(regex=\"^[0-9]+$\",message=\"Enter proper "+fieldName+".\")";*/
+			return "@org.hibernate.validator.Range(min=1,message=\""+fieldName+" can not be null\")";
+		case Types.CHAR:
+			return "@org.hibernate.validator.NotNull(message=\""+fieldName+" can not be null\")"
+					+ "@org.hibernate.validator.Length(max="+fieldSize+", message =\"Data must be in Proper length.\")\n"
+					+ "@Pattern(regex=\"^[A-Za-z0-9\\\\s]+$\",message=\"Enter proper "+fieldName+".\")";
+		case Types.VARCHAR:
+			return "@org.hibernate.validator.NotNull(message=\""+fieldName+" can not be null\")"
+					+ "@org.hibernate.validator.Length(max="+fieldSize+", message =\""+fieldName+"Data must be in Proper length.\")\n"
+					+ "@Pattern(regex=\"^[A-Za-z0-9\\\\s]+$\",message=\"Enter proper "+fieldName+".\")";
+		case Types.LONGVARCHAR:
+			return "@org.hibernate.validator.NotNull(message=\""+fieldName+" can not be null\")"
+					+ "@org.hibernate.validator.Length(max="+fieldSize+", message =\"Data must be in Proper length.\")\n"
+					+ "@Pattern(regex=\"^[A-Za-z0-9\\\\s]+$\",message=\"Enter proper "+fieldName+".\")";
+		default: break;
+		}
+		return"";
+	}
+	
+	public boolean createFile(String fileName, String content, String extension) {
+		/*
+		 * File file = new File(""+fileName+"."+ extension);
+		 * System.out.println("file Store Path"+file.getAbsolutePath()); try
+		 * (FileOutputStream fop = new FileOutputStream(file)) {
+		 * 
+		 * if (!file.exists()) { file.createNewFile(); }
+		 * 
+		 * byte[] contentInBytes = content.getBytes();
+		 * fop.write(contentInBytes); fop.flush(); fop.close();
+		 * 
+		 * } catch (IOException e) { e.printStackTrace(); return false; }
+		 */
+		System.out.println("File location : " + fileName + "." + extension);
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter(fileName + "." + extension, "UTF-8");
+			writer.println(content);
+			writer.close();
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+
+	}
+
+	public String getValueFromPropertieFile(String propertyName) {
+		Properties prop = new Properties();
+		InputStream inputStream = null;
+		inputStream = getClass().getClassLoader().getResourceAsStream("config/config.properties");
+		try {
+			prop.load(inputStream);
+			return prop.getProperty(propertyName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return "";
+	}
+
+	public  boolean compileJavaFile(String fileUrl) {
+		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
+		File javaFileUri = new File(fileUrl);
+		try {
+			
+
+			List<String> optionList = new ArrayList<String>();
+			// set compiler's classpath to be same as the runtime's
+			optionList.addAll(Arrays.asList("-classpath", System.getProperty("java.class.path")
+					+ getValueFromPropertieFile("libLocation")));
+
+			Iterable<? extends JavaFileObject> compilationUnit = fileManager
+					.getJavaFileObjectsFromFiles(Arrays.asList(javaFileUri));
+
+			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, optionList, null,
+					compilationUnit);
+
+			boolean result =  task.call();
+			
+			if(result){
+				return true;
+			}else{
+				System.out.println("Compilation error");
+				for (Diagnostic<?> diagnostic : diagnostics.getDiagnostics()) {
+		            System.err.format("Error on line %d in %s", diagnostic.getLineNumber(), diagnostic);
+		        }
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			return false;
+		}finally {
+			try {
+				fileManager.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	public boolean copyFile(String from, String to) {
+
+		try {
+			// Files.copy( , );
+			Files.move(new File(from).toPath(), new File(to).toPath(), null);
+		} catch (FileAlreadyExistsException e) {
+			e.printStackTrace();
+			return true;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+
+		}
+		return true;
+	}
+
+	public Object buindDataInObject(Object bean, Class<?> cls, HttpServletRequest request) {
+
+		Map<String, String[]> perametors = request.getParameterMap();
+		Enumeration en = request.getParameterNames();
+
+		/*
+		 * while (en.hasMoreElements()) { String param = (String)
+		 * en.nextElement(); System.out.println("-values" +
+		 * (perametors.get(param)[0])); }
+		 */
+
+		Field[] fields = cls.getDeclaredFields();
+
+		// Create a instance of Parameter Class
+		// T bean = (T) cls.newInstance();
+		while (en.hasMoreElements()) {
+			// getting the SQL column name
+			String columnName = (String) en.nextElement();// perametors.get((String)
+															// en.nextElement())[0];
+			// get Table name
+			// String tableName = rsmd.getTableName(_iterator + 1);
+			// Check the class name of table name is same
+			// if (tableName.equalsIgnoreCase(bean.getClass().getSimpleName()))
+			// {
+
+			Object columnValue = perametors.get(columnName).length > 1 ? String.join(",", perametors.get(columnName))
+					: perametors.get(columnName)[0];
+			for (Field field : fields) {
+				System.out.println("Field name " + field.getName() + "Column name :" + columnName);
+				if (field.getName().equalsIgnoreCase(columnName) && columnValue != null) {
+					try {
+						BeanUtils.setProperty(bean, field.getName(), columnValue);
+					} catch (IllegalAccessException | InvocationTargetException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					break;
+				}
+
+			}
+			// }
+			// reading the value of the SQL column
+
+		}
+
+		// System.out.println(bean);
+
+		return bean;
+	}
+
+	public boolean deleteFile(String filePath) {
+
+		File file = new File(filePath);
+
+		return file.delete();
+	}
+
+	public Class<?> getClassTypeFromName(String modelName) {
+		try {
+			return Class.forName(this.getValueFromPropertieFile("beanPackage") + "." + modelName);
+		} catch (ClassNotFoundException e) {
+
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public String getTDTegFromControlType(String controlType, int counter) {
+
+		String TDTeg = "";
+		switch (controlType) {
+		case "textbox":
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox' selected>TextBox</option>" + "<option value='textarea'>TextArea</option>"
+					+ "<option value='radio'>Radio Button</option>" + "<option value='checkBox'>Check Box</option>"
+					+ "<option value='comboBox'>Select</option>" + "</select></td>";
+			break;
+		case "textarea":
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox'>TextBox</option>" + "<option value='textarea' selected>TextArea</option>"
+					+ "<option value='radio'>Radio Button</option>" + "<option value='checkBox'>Check Box</option>"
+					+ "<option value='comboBox'>Select</option>" + "</select></td>";
+			// selected
+			break;
+		case "checkBox":
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox'>TextBox</option>" + "<option value='textarea' >TextArea</option>"
+					+ "<option value='radio'>Radio Button</option>"
+					+ "<option value='checkBox' selected >Check Box</option>"
+					+ "<option value='comboBox'>Select</option>" + "</select></td>";
+			break;
+		case "radio":
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox'>TextBox</option>" + "<option value='textarea' >TextArea</option>"
+					+ "<option value='radio' selected >Radio Button</option>"
+					+ "<option value='checkBox'  >Check Box</option>" + "<option value='comboBox'>Select</option>"
+					+ "</select></td>";
+			break;
+		case "comboBox":
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox'>TextBox</option>" + "<option value='textarea' >TextArea</option>"
+					+ "<option value='radio'  >Radio Button</option>" + "<option value='checkBox' >Check Box</option>"
+					+ "<option value='comboBox' selected >Select</option>" + "</select></td>";
+			break;
+		default:
+			TDTeg = "<td><select class='form-control temp' name='fld_ctrl' id='fld_ctrl" + counter
+					+ "' onchange='getFldCtrl(\"fld_ctrl" + counter + "\")' >"
+					+ "<option value='textbox'>TextBox</option>" + "<option value='textarea'>TextArea</option>"
+					+ "<option value='radio'>Radio Button</option>" + "<option value='checkBox'>Check Box</option>"
+					+ "<option value='comboBox'>Select</option>" + "</select></td>";
+			break;
+		}
+		return TDTeg;
+	}
+
+	public String getTDTegFromDataType(String dataType) {
+		String TDTeg = "";
+		switch (dataType) {
+		case "INT":
+			TDTeg = "<td><select class='form-control' name='fld_type' id='fld_type'>"
+					+ "<option value='INT' selected>INT</option>" + "<option value='CHAR'>CHAR</option>"
+					+ "<option value='VARCHAR'>VARCHAR</option>" + "</select></td>";
+			break;
+		case "CHAR":
+			TDTeg = "<td><select class='form-control' name='fld_type' id='fld_type'>"
+					+ "<option value='INT' >INT</option>" + "<option value='CHAR' selected >CHAR</option>"
+					+ "<option value='VARCHAR'>VARCHAR</option>" + "</select></td>";
+			break;
+		case "VARCHAR":
+			TDTeg = "<td><select class='form-control' name='fld_type' id='fld_type'>"
+					+ "<option value='INT' >INT</option>" + "<option value='CHAR'>CHAR</option>"
+					+ "<option value='VARCHAR' selected >VARCHAR</option>" + "</select></td>";
+			break;
+
+		default:
+			TDTeg = "<td><select class='form-control' name='fld_type' id='fld_type'>"
+					+ "<option value='INT' selected>INT</option>" + "<option value='CHAR'>CHAR</option>"
+					+ "<option value='VARCHAR'>VARCHAR</option>" + "</select></td>";
+			break;
+		}
+		return TDTeg;
+	}
+	
+	public boolean checkNull(String[] strArray) {
+		for (String str : strArray) {
+			System.out.println(str);
+			if (str.trim() == "" || str == null) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public int getRegexPatternId(String fieldController)
+	{
+		System.out.println("fieldController :" + fieldController+"'");
+		switch (fieldController) {
+		case "INT":
+			return 1;
+		case "CHAR":
+			return 0;
+		case "VARCHAR":
+			return 0;
+		default:
+			break;
+		}
+		return 0;
+	}
+	
+	public static HashMap<String, String> hibernateValidation(Class<?> type, Object object) {
+		HashMap<String, String> errorList = new HashMap<>();
+
+		try {
+
+			ClassValidator classValidator = new ClassValidator(type,
+					ResourceBundle.getBundle("messages", Locale.ENGLISH));
+			InvalidValue[] validationMessages = classValidator.getInvalidValues(object);
+			System.err.println("Length ::" + validationMessages.length);
+			if (validationMessages.length > 0) {
+				for (InvalidValue invalidValue : validationMessages) {
+					// System.err.println(invalidValue.getPropertyName());
+					if (errorList.containsKey(invalidValue.getPropertyName())) {
+						// errorList.put(invalidValue.getPropertyName(),
+						// errorList.get(invalidValue.getPropertyName())+" <br>"
+						// + invalidValue.getMessage());
+
+					} else {
+						errorList.put(invalidValue.getPropertyName(), invalidValue.getMessage());
+						System.out.println(
+								"Error key=" + invalidValue.getPropertyName() + " Value= " + invalidValue.getMessage());
+					}
+					System.out.println(
+							"***Error key=" + invalidValue.getPropertyName() + " Value= " + invalidValue.getMessage());
+				}
+				System.err.println("Map Length " + errorList.size());
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Errror : " + e);
+			return null;
+		}
+
+		return errorList;
+	}
+}

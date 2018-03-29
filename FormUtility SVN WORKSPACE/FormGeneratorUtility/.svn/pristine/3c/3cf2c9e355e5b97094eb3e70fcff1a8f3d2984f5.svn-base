@@ -1,0 +1,158 @@
+package com.util.hibernate.util;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.log4j.Logger;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Environment;
+
+import com.bean.HtmlElement;
+import com.bean.PageMapping;
+import com.bean.RegexPattern;
+import com.bean.TblFormSchema;
+import com.util.common.CommonUtility;
+
+public class HibernateUtility {
+
+	private SessionFactory sessionFactory;
+
+	private Logger logger = Logger.getLogger(HibernateUtility.class);
+	
+	public SessionFactory getSessionFactory() throws Exception {
+
+			StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder();
+			// Hibernate settings equivalent to hibernate.cfg.xml's properties
+			// Apply settings
+			registryBuilder.applySettings(getSetting());
+			// Create registry
+			StandardServiceRegistry registry = registryBuilder.build();
+			// Create MetadataSources
+			MetadataSources sources = new MetadataSources(registry);
+			sources.addAnnotatedClass(TblFormSchema.class);
+			sources.addAnnotatedClass(HtmlElement.class);
+			sources.addAnnotatedClass(PageMapping.class);
+			sources.addAnnotatedClass(RegexPattern.class);
+			// Create Metadata
+			Metadata metadata = sources.getMetadataBuilder().build();
+			logger.info("Hibernate sessionFactory created");
+			if(metadata.getSessionFactoryBuilder().build() == null){
+				return null;
+			}
+			return metadata.getSessionFactoryBuilder().build();
+
+	}
+
+	public SessionFactory getSessionFactory(Class... outputClass) throws Exception {
+		
+			Properties prop = getProperties();
+
+			StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder();
+			// Hibernate settings equivalent to hibernate.cfg.xml's properties
+			// Apply settings
+			registryBuilder.applySettings(getSetting());
+			// Create registry
+			StandardServiceRegistry registry = registryBuilder.build();
+			// Create MetadataSources
+			MetadataSources sources = new MetadataSources(registry);
+			for (Class cls : outputClass) {
+				sources.addAnnotatedClass(cls);
+			}
+			Metadata metadata = sources.getMetadataBuilder().build();
+			logger.info("Hibernate sessionFactory created");
+			if(metadata.getSessionFactoryBuilder().build() == null) {
+				return null;
+			}
+			return metadata.getSessionFactoryBuilder().build();
+		
+	}
+
+	/*
+	 * public EntityManager createEntityManager() { Properties properties = new
+	 * Properties(); properties.put("javax.persistence.provider",
+	 * "org.hibernate.ejb.HibernatePersistence");
+	 * properties.put("javax.persistence.transactionType", "RESOURCE_LOCAL");
+	 * properties.put("hibernate.connection.username", "sa");
+	 * properties.put("hibernate.connection.password" ,"");
+	 * properties.put("hibernate.connection.driver_class"
+	 * ,"org.hsqldb.jdbcDriver"); properties.put("hibernate.connection.url",
+	 * "jdbc:hsqldb:." ); properties.put("hibernate.dialect"
+	 * ,"org.hibernate.dialect.HSQLDialect");
+	 * properties.put("hibernate.hbm2ddl.auto","create-drop");
+	 * properties.put("hibernate.show_sql","true");
+	 * properties.put("hibernate.format_sql" ,"true"); // Properties prop =
+	 * getProperties(); AnnotationConfiguration configuration = new
+	 * AnnotationConfiguration();
+	 * configuration.addAnnotatedClass(TblFormSchema.class);
+	 * configuration.addAnnotatedClass(HtmlElement.class);
+	 * configuration.addAnnotatedClass(PageMapping.class);
+	 * configuration.addAnnotatedClass(RegexPattern.class);
+	 * configuration.addAnnotatedClass(AuditLog.class);
+	 * configuration.addProperties(prop); // EntityManagerFactory factory =
+	 * configuration.buildSessionFactory()(); return
+	 * factory.createEntityManager(); }
+	 */
+	private Properties getProperties() {
+		CommonUtility commonUtility = new CommonUtility();
+		Properties databaseProperties = commonUtility
+				.loadPropertieFile("config/database.properties");
+
+		Properties properties = new Properties();
+		properties.setProperty("hibernate.connection.driver_class",
+				"com.mysql.jdbc.Driver");
+		properties.setProperty("hibernate.connection.url",
+				databaseProperties.getProperty("url"));
+		properties.setProperty("hibernate.connection.username",
+				databaseProperties.getProperty("username"));
+		properties.setProperty("hibernate.connection.password",
+				databaseProperties.getProperty("password"));
+		properties.setProperty("hibernate.default_schema",
+				databaseProperties.getProperty("db"));
+		// properties.setProperty("dialect",
+		// databaseProperties.getProperty("dialect"));
+		properties.setProperty("dialect", "org.hibernate.dialect.MySQLDialect");
+		properties.setProperty("hibernate.hbm2ddl.auto", "update");
+		properties.setProperty("hibernate.show_sql", "true");
+		properties.setProperty("hibernate.generate_statistics", "false");
+		/*
+		 * properties.setProperty("hibernate.c3p0.max_size",databaseProperties.
+		 * getProperty("connection-pool.max_size"));
+		 * properties.setProperty("hibernate.c3p0.min_size"
+		 * ,databaseProperties.getProperty("connection-pool.min_size"));
+		 * properties
+		 * .setProperty("hibernate.c3p0.timeout",databaseProperties.getProperty
+		 * ("connection-pool.timeout"));
+		 * properties.setProperty("hibernate.c3p0.max_statements"
+		 * ,databaseProperties.getProperty("connection-pool.max_statements"));
+		 */
+		/* properties.setProperty("hibernate.format_sql","true"); */
+		logger.info("Properties setted");
+		return properties;
+	}
+
+	private Map<String, String> getSetting() {
+		Map<String, String> settings = new HashMap<>();
+		CommonUtility commonUtility = new CommonUtility();
+		Properties databaseProperties = commonUtility
+				.loadPropertieFile("config/database.properties");
+
+		settings.put(Environment.DRIVER, "com.mysql.jdbc.Driver");
+		settings.put(Environment.URL, databaseProperties.getProperty("url"));
+		settings.put(Environment.USER,
+				databaseProperties.getProperty("username"));
+		settings.put(Environment.PASS,
+				databaseProperties.getProperty("password"));
+		settings.put(Environment.DIALECT, "org.hibernate.dialect.MySQLDialect");
+		settings.put(Environment.HBM2DDL_AUTO, "update");
+		settings.put(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
+		settings.put(Environment.SHOW_SQL, "true");
+		settings.put(Environment.JPA_VALIDATION_MODE, "none");
+		logger.info("Settings setted");
+		return settings;
+	}
+}

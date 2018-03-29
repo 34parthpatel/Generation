@@ -1,0 +1,66 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="dept") 
+public class Dept implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+	return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+	@Column(name="deptid")
+Integer deptid ; 
+ 
+public Integer getDeptid() { 
+	return deptid; 
+} 
+public void setDeptid(Integer deptid) { 
+this.deptid = deptid; 
+} 
+	@Column(name="depttype")
+String depttype ; 
+ 
+public String getDepttype() { 
+	return depttype; 
+} 
+public void setDepttype(String depttype) { 
+this.depttype = depttype; 
+} 
+	@Column(name="deptprojectname")
+String deptprojectname ; 
+ 
+public String getDeptprojectname() { 
+	return deptprojectname; 
+} 
+public void setDeptprojectname(String deptprojectname) { 
+this.deptprojectname = deptprojectname; 
+} 
+	@Column(name="testfield")
+String testfield ; 
+ 
+public String getTestfield() { 
+	return testfield; 
+} 
+public void setTestfield(String testfield) { 
+this.testfield = testfield; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+deptid+depttype+deptprojectname+testfield); 
+  return "" ; 
+	}
+ }

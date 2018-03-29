@@ -1,0 +1,53 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import org.hibernate.validator.Pattern; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="dept") 
+public class Dept implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+@org.hibernate.validator.Range(min=1,message="ID can not be null")
+	@Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+	return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+@org.hibernate.validator.Range(min=1,message="deptid can not be null")
+	@Column(name="deptid")
+Integer deptid ; 
+ 
+public Integer getDeptid() { 
+	return deptid; 
+} 
+public void setDeptid(Integer deptid) { 
+this.deptid = deptid; 
+} 
+@org.hibernate.validator.NotNull(message="deptname can not be null")@org.hibernate.validator.Length(max=20, message ="Data must be in Proper length.")
+@Pattern(regex="^[A-Za-z0-9\\s]+$",message="Enter proper deptname.")
+	@Column(name="deptname")
+String deptname ; 
+ 
+public String getDeptname() { 
+	return deptname; 
+} 
+public void setDeptname(String deptname) { 
+this.deptname = deptname; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+deptid+deptname); 
+  return "" ; 
+	}
+ }

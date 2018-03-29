@@ -1,0 +1,116 @@
+package com.formBean;  
+import java.io.Serializable; 
+import javax.persistence.Column;
+ import javax.persistence.Entity; 
+ import javax.persistence.GeneratedValue;
+ import javax.persistence.GenerationType; 
+ import javax.persistence.Id; 
+ import org.hibernate.validator.Pattern; 
+ import javax.persistence.Table; 
+ import lombok.Getter; 
+ import lombok.Setter; 
+@Entity 
+@Table(name="Employee2") 
+public class Employee2 implements Serializable {
+	@Id  
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+@org.hibernate.validator.Range(min=1,message="ID can not be null")
+ @Column(name="ID")
+Integer ID ; 
+ 
+public Integer getID() { 
+ return ID; 
+} 
+public void setID(Integer ID) { 
+this.ID = ID; 
+} 
+@org.hibernate.validator.Range(min=1,message="emp_code can not be null")
+ @Column(name="emp_code")
+Integer emp_code ; 
+ 
+public Integer getEmp_code() { 
+ return emp_code; 
+} 
+public void setEmp_code(Integer emp_code) { 
+this.emp_code = emp_code; 
+} 
+@org.hibernate.validator.NotNull(message="emp_name can not be null")@org.hibernate.validator.Length(max=15, message ="Data must be in Proper length.")
+@Pattern(regex="^[A-Za-z0-9]{1}[A-Za-z0-9\\s]{0,}$",message="Enter proper emp_name.")
+ @Column(name="emp_name")
+String emp_name ; 
+ 
+public String getEmp_name() { 
+ return emp_name; 
+} 
+public void setEmp_name(String emp_name) { 
+this.emp_name = emp_name; 
+} 
+@org.hibernate.validator.NotNull(message="emp_psw can not be null")@org.hibernate.validator.Length(max=15, message ="emp_pswData must be in Proper length.")
+@Pattern(regex="(?=.*[0-9])(?=.*[a-z])(?=.{2,}[A-Z])(?=.{2,}[@#$%^&+=])(?=\\S+$).{8,}",message="Enter proper emp_psw.")
+ @Column(name="emp_psw")
+String emp_psw ; 
+ 
+public String getEmp_psw() { 
+ return emp_psw; 
+} 
+public void setEmp_psw(String emp_psw) { 
+this.emp_psw = emp_psw; 
+} 
+@org.hibernate.validator.NotNull(message="address can not be null")@org.hibernate.validator.Length(max=150, message ="addressData must be in Proper length.")
+@Pattern(regex="^[A-Za-z0-9]{1}[A-Za-z0-9\\s]{0,}$",message="Enter proper address.")
+ @Column(name="address")
+String address ; 
+ 
+public String getAddress() { 
+ return address; 
+} 
+public void setAddress(String address) { 
+this.address = address; 
+} 
+@org.hibernate.validator.NotNull(message="gender can not be null")@org.hibernate.validator.Length(max=6, message ="genderData must be in Proper length.")
+@Pattern(regex="^[A-Za-z0-9]{1}[A-Za-z0-9\\s]{0,}$",message="Enter proper gender.")
+ @Column(name="gender")
+String gender ; 
+ 
+public String getGender() { 
+ return gender; 
+} 
+public void setGender(String gender) { 
+this.gender = gender; 
+} 
+@org.hibernate.validator.NotNull(message="date1 can not be null")
+ @Column(name="date1")
+java.sql.Date date1 ; 
+ 
+public java.sql.Date getDate1() { 
+ return date1; 
+} 
+public void setDate1(java.sql.Date date1) { 
+this.date1 = date1; 
+} 
+@org.hibernate.validator.NotNull(message="date_time can not be null")
+ @Column(name="date_time")
+java.sql.Timestamp date_time ; 
+ 
+public java.sql.Timestamp getDate_time() { 
+ return date_time; 
+} 
+public void setDate_time(java.sql.Timestamp date_time) { 
+this.date_time = date_time; 
+} 
+@org.hibernate.validator.Range(min=1,message="emp_number can not be null")
+ @Column(name="emp_number")
+Integer emp_number ; 
+ 
+public Integer getEmp_number() { 
+ return emp_number; 
+} 
+public void setEmp_number(Integer emp_number) { 
+this.emp_number = emp_number; 
+} 
+	@Override 
+	public String toString() { 
+System.out.println(" To String method "  +ID+emp_code+emp_name+emp_psw+address+gender+date1+date_time+emp_number); 
+  return "" ; 
+	}
+ }
